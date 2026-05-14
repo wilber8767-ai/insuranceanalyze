@@ -468,41 +468,74 @@ function ClientCard({ client, onChange }: { client: ClientInfo; onChange: (c: Cl
   const set = (k: keyof ClientInfo) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     onChange({ ...client, [k]: e.target.value })
 
-  const fieldCls = 'w-full bg-slate-100 border-2 border-transparent rounded-xl px-4 py-3 text-sm font-semibold text-slate-900 focus:outline-none focus:border-blue-400 focus:bg-white transition-all'
+  const fieldCls = [
+    'w-full block',
+    'bg-slate-100 border-2 border-transparent rounded-xl',
+    'px-4 py-3',
+    'text-sm font-semibold text-slate-900',
+    'focus:outline-none focus:border-blue-400 focus:bg-white',
+    'transition-all',
+    'box-border max-w-full',
+  ].join(' ')
+
+  const labelCls = 'block text-xs font-bold text-slate-600 mb-1.5'
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 overflow-hidden">
       <div className="flex items-center gap-3 mb-5">
-        <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600"><User size={18} /></div>
+        <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600">
+          <User size={18} />
+        </div>
         <div>
           <h2 className="text-base font-bold text-slate-900">客戶基本資料</h2>
           <p className="text-xs text-slate-400 mt-0.5">被保險人資訊</p>
         </div>
       </div>
-      {/* 2-col grid on all sizes */}
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-xs font-bold text-slate-600 mb-1.5 flex items-center gap-1">
-            <User size={11} />客戶姓名
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+
+        <div className="w-full min-w-0">
+          <label className={labelCls}>
+            <span className="inline-flex items-center gap-1">
+              <User size={11} />客戶姓名
+            </span>
           </label>
-          <input value={client.name} onChange={set('name')} placeholder="王小明" className={fieldCls} />
+          <input
+            value={client.name}
+            onChange={set('name')}
+            placeholder="王小明"
+            className={fieldCls}
+          />
         </div>
-        <div>
-          <label className="block text-xs font-bold text-slate-600 mb-1.5 flex items-center gap-1">
-            <Calendar size={11} />出生年月日
+
+        <div className="w-full min-w-0">
+          <label className={labelCls}>
+            <span className="inline-flex items-center gap-1">
+              <Calendar size={11} />出生年月日
+            </span>
           </label>
-          <input type="date" value={client.birthdate} onChange={set('birthdate')} className={fieldCls} />
+          <input
+            type="date"
+            value={client.birthdate}
+            onChange={set('birthdate')}
+            className={fieldCls}
+            style={{ boxSizing: 'border-box', maxWidth: '100%' }}
+          />
         </div>
-        <div>
-          <label className="block text-xs font-bold text-slate-600 mb-1.5">性別</label>
+
+        <div className="w-full min-w-0">
+          <label className={labelCls}>性別</label>
           <select value={client.gender} onChange={set('gender')} className={fieldCls}>
             <option value="male">男性</option>
             <option value="female">女性</option>
           </select>
         </div>
-        <div>
-          <label className="block text-xs font-bold text-slate-600 mb-1.5 flex items-center gap-1">
-            <Briefcase size={11} />職業等級
+
+        <div className="w-full min-w-0">
+          <label className={labelCls}>
+            <span className="inline-flex items-center gap-1">
+              <Briefcase size={11} />職業等級
+            </span>
           </label>
           <select value={client.jobLevel} onChange={set('jobLevel')} className={fieldCls}>
             <option value="1">1 類（內勤 / 文職）</option>
@@ -511,6 +544,7 @@ function ClientCard({ client, onChange }: { client: ClientInfo; onChange: (c: Cl
             <option value="4">4 類（重體力勞動）</option>
           </select>
         </div>
+
       </div>
     </div>
   )
