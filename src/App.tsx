@@ -4,7 +4,7 @@ import { twMerge } from 'tailwind-merge'
 import {
   Shield, AlertTriangle, Heart, Activity, TrendingUp, Star,
   ChevronDown, ChevronUp, CheckCircle, AlertCircle, XCircle,
-  Flame, User, Calendar, Briefcase, ArrowUpRight, BadgeAlert,
+  Flame, User, Calendar, Briefcase, BadgeAlert,
   BarChart3
 } from 'lucide-react'
 
