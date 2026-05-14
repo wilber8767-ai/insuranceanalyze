@@ -2,54 +2,64 @@ import React, { useState } from 'react'
 import { clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 import {
-  Shield, AlertTriangle, TrendingUp, Heart, Activity,
-  ChevronDown, ChevronUp, Star, ArrowRight, Info, CheckCircle, XCircle
+  Shield, AlertTriangle, Heart, Activity, TrendingUp, Star,
+  ChevronDown, ChevronUp, CheckCircle, AlertCircle, XCircle,
+  Flame, ArrowUpRight, BadgeAlert
 } from 'lucide-react'
 
 const cn = (...inputs: Parameters<typeof clsx>) => twMerge(clsx(inputs))
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
 
-type CoverageStatus = 'good' | 'warning' | 'danger' | 'new'
+type Status = 'good' | 'warning' | 'danger' | 'new'
 
 interface PolicyItem {
   label: string
   current: string
   proposed: string
-  status: CoverageStatus
+  status: Status
   highlight?: boolean
+  hotTag?: boolean       // 🔥 最重要
+  alertTag?: boolean     // 紅色警告
   note?: string
+  isSummary?: boolean    // 合計列
 }
 
-interface InsuranceSection {
+interface Section {
   id: string
   title: string
+  subtitle: string
   icon: React.ReactNode
-  color: string
+  accentColor: string
+  borderColor: string
+  iconBg: string
   items: PolicyItem[]
-  alert?: string
+  criticalAlert?: string
 }
 
 // ─── Mock Data ────────────────────────────────────────────────────────────────
 
-const mockData: InsuranceSection[] = [
+const sections: Section[] = [
   {
     id: 'life',
     title: '壽險',
-    icon: <Shield size={20} />,
-    color: 'blue',
+    subtitle: '身故保障',
+    icon: <Shield size={18} />,
+    accentColor: 'text-blue-600',
+    borderColor: 'border-blue-100',
+    iconBg: 'bg-blue-50 text-blue-600',
     items: [
       {
         label: '身故保障額度',
-        current: '300 萬',
-        proposed: '800 萬',
+        current: 'NT$300 萬',
+        proposed: 'NT$800 萬',
         status: 'warning',
-        note: '建議提升至家庭年收入 10 倍'
+        note: '建議提升至家庭年收入 10 倍以上'
       },
       {
-        label: '保費',
-        current: 'NT$18,000 / 年',
-        proposed: 'NT$32,000 / 年',
+        label: '年繳保費',
+        current: 'NT$18,000',
+        proposed: 'NT$32,000',
         status: 'good',
       },
     ],
@@ -57,13 +67,16 @@ const mockData: InsuranceSection[] = [
   {
     id: 'accident',
     title: '意外險',
-    icon: <AlertTriangle size={20} />,
-    color: 'amber',
+    subtitle: '意外身故・住院・實支',
+    icon: <AlertTriangle size={18} />,
+    accentColor: 'text-orange-500',
+    borderColor: 'border-orange-100',
+    iconBg: 'bg-orange-50 text-orange-500',
     items: [
       {
         label: '意外身故',
-        current: '200 萬',
-        proposed: '500 萬',
+        current: 'NT$200 萬',
+        proposed: 'NT$500 萬',
         status: 'warning',
       },
       {
@@ -74,19 +87,23 @@ const mockData: InsuranceSection[] = [
       },
       {
         label: '意外實支實付（雜費上限）',
-        current: '無',
+        current: '未投保',
         proposed: 'NT$30 萬 / 次',
         status: 'danger',
         highlight: true,
-        note: '⚡ 重點保障，目前缺口最大'
+        hotTag: true,
+        note: '目前最大保障缺口，強烈建議優先補足'
       },
     ],
   },
   {
     id: 'medical',
     title: '醫療險',
-    icon: <Activity size={20} />,
-    color: 'teal',
+    subtitle: '實支實付・定額給付',
+    icon: <Activity size={18} />,
+    accentColor: 'text-teal-600',
+    borderColor: 'border-teal-100',
+    iconBg: 'bg-teal-50 text-teal-600',
     items: [
       {
         label: '【實支】住院日額',
@@ -96,16 +113,15 @@ const mockData: InsuranceSection[] = [
       },
       {
         label: '【實支】住院手術',
-        current: 'NT$3 萬 / 次',
-        proposed: 'NT$10 萬 / 次',
+        current: 'NT$30,000 / 次',
+        proposed: 'NT$100,000 / 次',
         status: 'warning',
       },
       {
         label: '【實支】門診手術',
-        current: '無',
-        proposed: 'NT$5 萬 / 次',
+        current: '未投保',
+        proposed: 'NT$50,000 / 次',
         status: 'danger',
-        highlight: false,
       },
       {
         label: '【實支】雜費上限',
@@ -113,7 +129,8 @@ const mockData: InsuranceSection[] = [
         proposed: 'NT$30 萬',
         status: 'warning',
         highlight: true,
-        note: '🔑 最重點項目：涵蓋自費醫材、藥費'
+        hotTag: true,
+        note: '涵蓋自費醫材、新式藥物、達文西手術費等'
       },
       {
         label: '【定額】住院日額',
@@ -123,45 +140,49 @@ const mockData: InsuranceSection[] = [
       },
       {
         label: '【定額】住院手術',
-        current: 'NT$2 萬 / 次',
-        proposed: 'NT$5 萬 / 次',
+        current: 'NT$20,000 / 次',
+        proposed: 'NT$50,000 / 次',
         status: 'warning',
       },
       {
-        label: '▶ 合計住院日額（實支＋定額）',
+        label: '每日合計保障金額（實支＋定額）',
         current: 'NT$2,500 / 日',
         proposed: 'NT$4,500 / 日',
         status: 'good',
-        highlight: true,
-        note: '自動加總：實支日額＋定額日額'
+        isSummary: true,
+        note: '自動加總：實支日額 + 定額日額'
       },
     ],
   },
   {
     id: 'critical',
     title: '重大傷病險',
-    icon: <Heart size={20} />,
-    color: 'rose',
-    alert: '⚠️ 舊保單為「重大疾病(7項)」— 保障範圍落後，需立即優化！',
+    subtitle: '重大疾病・重大傷病',
+    icon: <Heart size={18} />,
+    accentColor: 'text-rose-600',
+    borderColor: 'border-rose-100',
+    iconBg: 'bg-rose-50 text-rose-600',
+    criticalAlert: '現有保單為「重大疾病(7項)」— 保障範圍極窄，需立即優化！',
     items: [
       {
         label: '保障範圍',
         current: '重大疾病 7 項',
-        proposed: '重大傷病 22 萬＋項',
+        proposed: '重大傷病（逾22萬項）',
         status: 'danger',
         highlight: true,
-        note: '重大疾病(7項) vs 重大傷病卡制度，差距極大'
+        alertTag: true,
+        note: '7項重大疾病 vs 健保重大傷病卡制度，差距天壤之別'
       },
       {
         label: '一次給付額度',
-        current: '100 萬',
-        proposed: '200 萬',
+        current: 'NT$100 萬',
+        proposed: 'NT$200 萬',
         status: 'warning',
       },
       {
-        label: '保費',
-        current: 'NT$12,000 / 年',
-        proposed: 'NT$22,000 / 年',
+        label: '年繳保費',
+        current: 'NT$12,000',
+        proposed: 'NT$22,000',
         status: 'good',
       },
     ],
@@ -169,14 +190,18 @@ const mockData: InsuranceSection[] = [
   {
     id: 'cancer',
     title: '癌症險',
-    icon: <TrendingUp size={20} />,
-    color: 'purple',
+    subtitle: '一次金・住院・化放療',
+    icon: <TrendingUp size={18} />,
+    accentColor: 'text-violet-600',
+    borderColor: 'border-violet-100',
+    iconBg: 'bg-violet-50 text-violet-600',
     items: [
       {
         label: '初次罹癌一次金',
-        current: '30 萬',
-        proposed: '100 萬',
+        current: 'NT$30 萬',
+        proposed: 'NT$100 萬',
         status: 'warning',
+        highlight: true,
       },
       {
         label: '住院日額',
@@ -186,183 +211,217 @@ const mockData: InsuranceSection[] = [
       },
       {
         label: '住院手術',
-        current: 'NT$5 萬 / 次',
-        proposed: 'NT$15 萬 / 次',
+        current: 'NT$50,000 / 次',
+        proposed: 'NT$150,000 / 次',
         status: 'warning',
       },
       {
         label: '化療／放療補助',
-        current: 'NT$1 萬 / 次',
-        proposed: 'NT$3 萬 / 次',
+        current: 'NT$10,000 / 次',
+        proposed: 'NT$30,000 / 次',
         status: 'warning',
-        note: '含標靶治療補助'
+        note: '含標靶治療、免疫療法補助'
       },
     ],
   },
   {
     id: 'ltc',
     title: '長照險',
-    icon: <Star size={20} />,
-    color: 'indigo',
+    subtitle: '失能扶助・長期照護',
+    icon: <Star size={18} />,
+    accentColor: 'text-indigo-600',
+    borderColor: 'border-indigo-100',
+    iconBg: 'bg-indigo-50 text-indigo-600',
     items: [
       {
         label: '一次給付金',
-        current: '無',
-        proposed: '100 萬',
+        current: '未投保',
+        proposed: 'NT$100 萬',
         status: 'danger',
         highlight: true,
       },
       {
         label: '每月給付額',
-        current: '無',
-        proposed: 'NT$3 萬 / 月',
+        current: '未投保',
+        proposed: 'NT$30,000 / 月',
         status: 'danger',
         highlight: true,
-        note: '失能扶助金：最長給付至終身'
+        note: '失能扶助金，最長給付至終身'
       },
     ],
   },
 ]
 
-// ─── Color Maps ───────────────────────────────────────────────────────────────
+// ─── Status Config ────────────────────────────────────────────────────────────
 
-const colorMap = {
-  blue:   { bg: 'bg-blue-950', border: 'border-blue-700', text: 'text-blue-300', badge: 'bg-blue-900 text-blue-200', icon: 'text-blue-400' },
-  amber:  { bg: 'bg-amber-950', border: 'border-amber-700', text: 'text-amber-300', badge: 'bg-amber-900 text-amber-200', icon: 'text-amber-400' },
-  teal:   { bg: 'bg-teal-950', border: 'border-teal-700', text: 'text-teal-300', badge: 'bg-teal-900 text-teal-200', icon: 'text-teal-400' },
-  rose:   { bg: 'bg-rose-950', border: 'border-rose-700', text: 'text-rose-300', badge: 'bg-rose-900 text-rose-200', icon: 'text-rose-400' },
-  purple: { bg: 'bg-purple-950', border: 'border-purple-700', text: 'text-purple-300', badge: 'bg-purple-900 text-purple-200', icon: 'text-purple-400' },
-  indigo: { bg: 'bg-indigo-950', border: 'border-indigo-700', text: 'text-indigo-300', badge: 'bg-indigo-900 text-indigo-200', icon: 'text-indigo-400' },
+const statusConfig: Record<Status, { label: string; cls: string; icon: React.ReactNode }> = {
+  good:    { label: '保障完善', icon: <CheckCircle size={12} />, cls: 'bg-emerald-50 text-emerald-700 border border-emerald-200' },
+  warning: { label: '建議提升', icon: <AlertCircle size={12} />, cls: 'bg-blue-50 text-blue-700 border border-blue-200' },
+  danger:  { label: '缺口風險', icon: <XCircle size={12} />,    cls: 'bg-red-50 text-red-600 border border-red-200' },
+  new:     { label: '新增保障', icon: <ArrowUpRight size={12} />, cls: 'bg-slate-100 text-slate-600 border border-slate-200' },
 }
 
-const statusConfig = {
-  good:    { icon: <CheckCircle size={14} />, label: '已覆蓋', cls: 'text-emerald-400 bg-emerald-950 border border-emerald-800' },
-  warning: { icon: <Info size={14} />,        label: '建議提升', cls: 'text-amber-400 bg-amber-950 border border-amber-800' },
-  danger:  { icon: <XCircle size={14} />,     label: '缺口風險', cls: 'text-rose-400 bg-rose-950 border border-rose-800' },
-  new:     { icon: <ArrowRight size={14} />,  label: '新增保障', cls: 'text-sky-400 bg-sky-950 border border-sky-800' },
-}
+// ─── Sub-components ───────────────────────────────────────────────────────────
 
-// ─── Components ───────────────────────────────────────────────────────────────
-
-function StatusBadge({ status }: { status: CoverageStatus }) {
+function StatusPill({ status }: { status: Status }) {
   const cfg = statusConfig[status]
   return (
-    <span className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium', cfg.cls)}>
+    <span className={cn(
+      'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap',
+      cfg.cls
+    )}>
       {cfg.icon}
       {cfg.label}
     </span>
   )
 }
 
-function ComparisonRow({ item }: { item: PolicyItem }) {
+function SummaryCard({ item }: { item: PolicyItem }) {
   return (
-    <tr className={cn(
-      'border-b border-slate-800 transition-colors',
-      item.highlight ? 'bg-slate-800/60' : 'hover:bg-slate-800/30'
-    )}>
-      <td className="py-3 pl-4 pr-2 align-top">
-        <div className="flex flex-col gap-1">
-          <span className={cn(
-            'text-sm font-medium',
-            item.highlight ? 'text-white' : 'text-slate-300'
-          )}>
-            {item.label}
-            {item.highlight && (
-              <span className="ml-1.5 inline-block w-1.5 h-1.5 rounded-full bg-amber-400 align-middle" />
-            )}
-          </span>
-          {item.note && (
-            <span className="text-xs text-slate-500 leading-snug">{item.note}</span>
-          )}
+    <tr>
+      <td colSpan={4} className="px-6 py-3">
+        <div className="rounded-xl bg-slate-800 text-white px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <p className="text-xs text-slate-400 mb-0.5 font-medium uppercase tracking-wide">每日合計保障金額（實支＋定額）</p>
+            <p className="text-[11px] text-slate-500">{item.note}</p>
+          </div>
+          <div className="flex items-center gap-6 shrink-0">
+            <div className="text-center">
+              <p className="text-xs text-slate-500 mb-1">現有方案</p>
+              <p className="text-lg font-bold text-slate-300 font-mono">{item.current}</p>
+            </div>
+            <div className="w-px h-8 bg-slate-600" />
+            <div className="text-center">
+              <p className="text-xs text-emerald-400 mb-1">建議方案</p>
+              <p className="text-xl font-bold text-emerald-400 font-mono">{item.proposed}</p>
+            </div>
+          </div>
         </div>
-      </td>
-      <td className="py-3 px-3 align-middle">
-        <span className={cn(
-          'font-mono text-sm px-2 py-1 rounded',
-          item.current === '無'
-            ? 'text-slate-500 bg-slate-800'
-            : 'text-slate-300 bg-slate-800'
-        )}>
-          {item.current}
-        </span>
-      </td>
-      <td className="py-3 px-3 align-middle">
-        <span className="font-mono text-sm px-2 py-1 rounded text-sky-300 bg-sky-950 border border-sky-800 font-semibold">
-          {item.proposed}
-        </span>
-      </td>
-      <td className="py-3 pr-4 pl-2 align-middle">
-        <StatusBadge status={item.status} />
       </td>
     </tr>
   )
 }
 
-function SectionCard({ section }: { section: InsuranceSection }) {
-  const [expanded, setExpanded] = useState(true)
-  const colors = colorMap[section.color as keyof typeof colorMap]
+function ItemRow({ item }: { item: PolicyItem }) {
+  if (item.isSummary) return <SummaryCard item={item} />
+
+  return (
+    <tr className={cn(
+      'border-b border-slate-100 last:border-0 transition-colors group',
+      item.highlight ? 'bg-blue-50/40' : 'hover:bg-slate-50'
+    )}>
+      {/* Label */}
+      <td className="py-4 pl-6 pr-3 align-top w-[42%]">
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-start gap-2">
+            {item.hotTag && (
+              <span className="inline-flex items-center gap-0.5 shrink-0 mt-0.5 px-1.5 py-0.5 rounded-md bg-orange-100 text-orange-600 text-[10px] font-bold border border-orange-200">
+                <Flame size={9} />最重要
+              </span>
+            )}
+            {item.alertTag && (
+              <span className="inline-flex items-center gap-0.5 shrink-0 mt-0.5 px-1.5 py-0.5 rounded-md bg-red-100 text-red-600 text-[10px] font-bold border border-red-200">
+                <BadgeAlert size={9} />保障範圍極窄
+              </span>
+            )}
+            <span className={cn(
+              'text-sm leading-snug',
+              item.highlight ? 'font-semibold text-slate-800' : 'font-medium text-slate-700'
+            )}>
+              {item.label}
+            </span>
+          </div>
+          {item.note && (
+            <p className="text-xs text-slate-400 leading-snug pl-0.5">{item.note}</p>
+          )}
+        </div>
+      </td>
+
+      {/* Current */}
+      <td className="py-4 px-3 align-middle w-[22%]">
+        <span className={cn(
+          'text-sm font-mono',
+          item.current === '未投保' ? 'text-red-400 font-medium' : 'text-slate-400'
+        )}>
+          {item.current}
+        </span>
+      </td>
+
+      {/* Proposed */}
+      <td className="py-4 px-3 align-middle w-[22%]">
+        <span className="text-sm font-mono font-bold text-blue-600">
+          {item.proposed}
+        </span>
+      </td>
+
+      {/* Status */}
+      <td className="py-4 pr-6 pl-2 align-middle w-[14%]">
+        <StatusPill status={item.status} />
+      </td>
+    </tr>
+  )
+}
+
+function SectionCard({ section }: { section: Section }) {
+  const [open, setOpen] = useState(true)
 
   return (
     <div className={cn(
-      'rounded-xl border overflow-hidden transition-all duration-300',
-      'bg-slate-900 border-slate-700',
+      'bg-white rounded-2xl shadow-sm border overflow-hidden transition-all duration-200',
+      section.borderColor
     )}>
-      {/* Header */}
+      {/* Card Header */}
       <button
-        onClick={() => setExpanded(e => !e)}
-        className={cn(
-          'w-full flex items-center justify-between px-5 py-4',
-          'border-b border-slate-700 hover:bg-slate-800/50 transition-colors',
-          expanded ? colors.bg : ''
-        )}
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between px-6 py-5 hover:bg-slate-50/60 transition-colors"
       >
-        <div className="flex items-center gap-3">
-          <span className={cn('p-2 rounded-lg', colors.badge, colors.icon)}>
+        <div className="flex items-center gap-4">
+          <div className={cn('p-2.5 rounded-xl', section.iconBg)}>
             {section.icon}
-          </span>
-          <span className={cn('text-base font-semibold font-serif', colors.text)}>
-            {section.title}
-          </span>
-          <span className="text-xs text-slate-500 hidden sm:inline">
-            {section.items.length} 項比較
-          </span>
+          </div>
+          <div className="text-left">
+            <h2 className={cn('text-base font-bold', section.accentColor)}>
+              {section.title}
+            </h2>
+            <p className="text-xs text-slate-400 mt-0.5">{section.subtitle}</p>
+          </div>
         </div>
-        <span className="text-slate-400">
-          {expanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+        <span className="text-slate-300">
+          {open ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
         </span>
       </button>
 
-      {/* Alert Banner */}
-      {section.alert && expanded && (
-        <div className="mx-4 mt-4 flex items-start gap-2 px-4 py-3 rounded-lg bg-rose-950 border border-rose-700 text-rose-300 text-sm font-medium">
-          <AlertTriangle size={16} className="shrink-0 mt-0.5 text-rose-400" />
-          {section.alert}
+      {/* Critical Alert */}
+      {section.criticalAlert && open && (
+        <div className="mx-6 mb-1 flex items-center gap-2.5 px-4 py-3 rounded-xl bg-red-50 border border-red-200">
+          <AlertTriangle size={15} className="text-red-500 shrink-0" />
+          <p className="text-sm font-semibold text-red-600">{section.criticalAlert}</p>
         </div>
       )}
 
       {/* Table */}
-      {expanded && (
+      {open && (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[560px]">
+          <table className="w-full min-w-[580px]">
             <thead>
-              <tr className="border-b border-slate-700">
-                <th className="py-2.5 pl-4 pr-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-[38%]">
+              <tr className="border-t border-b border-slate-100 bg-slate-50/70">
+                <th className="py-2.5 pl-6 pr-3 text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
                   保障項目
                 </th>
-                <th className="py-2.5 px-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-[22%]">
+                <th className="py-2.5 px-3 text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
                   現有方案
                 </th>
-                <th className="py-2.5 px-3 text-left text-xs font-medium text-sky-500 uppercase tracking-wider w-[22%]">
+                <th className="py-2.5 px-3 text-left text-[11px] font-semibold text-blue-500 uppercase tracking-wider">
                   建議方案
                 </th>
-                <th className="py-2.5 pr-4 pl-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-[18%]">
+                <th className="py-2.5 pr-6 pl-2 text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
                   狀態
                 </th>
               </tr>
             </thead>
             <tbody>
               {section.items.map((item, i) => (
-                <ComparisonRow key={i} item={item} />
+                <ItemRow key={i} item={item} />
               ))}
             </tbody>
           </table>
@@ -372,23 +431,28 @@ function SectionCard({ section }: { section: InsuranceSection }) {
   )
 }
 
-// ─── Summary Bar ──────────────────────────────────────────────────────────────
+// ─── Summary Stats ────────────────────────────────────────────────────────────
 
-function SummaryBar() {
+function StatsBar() {
   const stats = [
-    { label: '保障缺口', value: '4', unit: '項', color: 'text-rose-400' },
-    { label: '建議提升', value: '9', unit: '項', color: 'text-amber-400' },
-    { label: '保障完善', value: '3', unit: '項', color: 'text-emerald-400' },
-    { label: '總保費增幅', value: '+78%', unit: '', color: 'text-sky-400' },
+    { value: '4', label: '保障缺口', sub: '需立即補足', color: 'text-red-500', bg: 'bg-red-50', border: 'border-red-100' },
+    { value: '9', label: '建議提升', sub: '優化空間大', color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100' },
+    { value: '3', label: '保障完善', sub: '維持現狀', color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100' },
+    { value: '+78%', label: '保費增幅', sub: '保障翻倍成長', color: 'text-violet-600', bg: 'bg-violet-50', border: 'border-violet-100' },
   ]
+
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
       {stats.map((s, i) => (
-        <div key={i} className="bg-slate-900 border border-slate-700 rounded-xl p-4 text-center">
-          <div className={cn('text-2xl font-mono font-bold', s.color)}>
-            {s.value}<span className="text-sm ml-0.5">{s.unit}</span>
-          </div>
-          <div className="text-xs text-slate-500 mt-1">{s.label}</div>
+        <div key={i} className={cn(
+          'rounded-2xl border p-5 flex flex-col gap-1',
+          s.bg, s.border
+        )}>
+          <span className={cn('text-3xl font-bold font-mono tracking-tight', s.color)}>
+            {s.value}
+          </span>
+          <span className="text-sm font-semibold text-slate-700">{s.label}</span>
+          <span className="text-xs text-slate-400">{s.sub}</span>
         </div>
       ))}
     </div>
@@ -399,17 +463,15 @@ function SummaryBar() {
 
 function Legend() {
   return (
-    <div className="flex flex-wrap gap-3 mb-6 text-xs">
-      {Object.entries(statusConfig).map(([key, val]) => (
-        <span key={key} className={cn('inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full', val.cls)}>
-          {val.icon}
-          {val.label}
+    <div className="flex flex-wrap gap-2 mb-6">
+      {Object.values(statusConfig).map((cfg, i) => (
+        <span key={i} className={cn(
+          'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold',
+          cfg.cls
+        )}>
+          {cfg.icon}{cfg.label}
         </span>
       ))}
-      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-amber-300 bg-slate-800 border border-slate-700">
-        <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-        重點項目
-      </span>
     </div>
   )
 }
@@ -418,51 +480,61 @@ function Legend() {
 
 export default function App() {
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100" style={{ fontFamily: "'Noto Sans TC', sans-serif" }}>
-      {/* Top stripe */}
-      <div className="h-1 w-full bg-gradient-to-r from-blue-600 via-sky-500 to-teal-500" />
+    <div className="min-h-screen bg-slate-50" style={{ fontFamily: "'Noto Sans TC', sans-serif" }}>
+
+      {/* Top accent line */}
+      <div className="h-1 bg-gradient-to-r from-blue-600 via-blue-500 to-teal-500" />
 
       {/* Header */}
-      <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-lg sm:text-xl font-bold font-serif text-white tracking-tight">
-              保險規劃分析報告
-            </h1>
-            <p className="text-xs text-slate-500 mt-0.5">六大險種保障缺口全面檢視</p>
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-20 shadow-sm">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
+              <Shield size={16} className="text-white" />
+            </div>
+            <div>
+              <h1 className="text-base font-bold text-slate-900 leading-none">
+                保險規劃分析報告
+              </h1>
+              <p className="text-[11px] text-slate-400 mt-0.5">六大險種保障缺口全面檢視</p>
+            </div>
           </div>
-          <div className="hidden sm:flex items-center gap-2 text-xs text-slate-400 bg-slate-800 px-3 py-2 rounded-lg border border-slate-700">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            分析日期：2025/06/01
+          <div className="hidden sm:flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            <span className="text-xs text-slate-500 font-medium">2025 / 06 / 01</span>
           </div>
         </div>
       </header>
 
       {/* Main */}
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-        {/* Intro */}
-        <div className="mb-8 p-5 rounded-xl bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700">
-          <p className="text-sm text-slate-300 leading-relaxed">
-            以下為您的現有保單與建議方案的詳細比較。
-            <span className="text-sky-400 font-medium">藍色數字</span>為建議方案，
-            <span className="text-slate-400">灰色數字</span>為現有方案。
-            標有 <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400 align-middle mx-0.5" /> 的項目為重點保障，請優先檢視。
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
+
+        {/* Hero intro */}
+        <div className="mb-8 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-700 p-6 text-white shadow-lg shadow-blue-200">
+          <p className="text-xs font-semibold uppercase tracking-widest text-blue-200 mb-2">
+            保障分析摘要
+          </p>
+          <p className="text-sm leading-relaxed text-blue-100">
+            以下報告比對您的現有保單與建議方案。
+            <span className="text-white font-semibold">藍色粗體</span>為建議方案金額，
+            <span className="text-blue-300">灰色</span>為現有方案。
+            標有 <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-orange-400/30 text-orange-200 text-[11px] font-bold border border-orange-400/30"><Flame size={9} />最重要</span> 的項目請優先檢視。
           </p>
         </div>
 
-        <SummaryBar />
+        <StatsBar />
         <Legend />
 
-        {/* Sections */}
+        {/* Section Cards */}
         <div className="space-y-4">
-          {mockData.map(section => (
-            <SectionCard key={section.id} section={section} />
+          {sections.map(s => (
+            <SectionCard key={s.id} section={s} />
           ))}
         </div>
 
         {/* Footer */}
-        <footer className="mt-12 pt-6 border-t border-slate-800 text-center text-xs text-slate-600">
-          本報告僅供參考，實際保障內容以保單條款為準。請諮詢專業保險顧問。
+        <footer className="mt-12 text-center text-xs text-slate-400 border-t border-slate-200 pt-6">
+          本報告僅供規劃參考，實際保障內容以各保單條款為準。建議諮詢合格保險顧問後再行投保。
         </footer>
       </main>
     </div>
