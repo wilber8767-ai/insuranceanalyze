@@ -4,8 +4,8 @@ import { twMerge } from 'tailwind-merge'
 import {
   Shield, AlertTriangle, Heart, Activity, TrendingUp, Star,
   ChevronDown, ChevronUp, CheckCircle, AlertCircle, XCircle,
-  Flame, User, Calendar, Briefcase, BadgeAlert,
-  BarChart3
+  Flame, User, Calendar, Briefcase, BadgeAlert, BarChart3,
+  FileText, X, TrendingDown, Zap
 } from 'lucide-react'
 
 const cn = (...inputs: Parameters<typeof clsx>) => twMerge(clsx(inputs))
@@ -20,42 +20,37 @@ interface ClientInfo {
 }
 
 interface MedicalData {
-  currentRealDailyAmount: number
-  currentFixedDailyAmount: number
+  currentRealDaily: number
+  currentFixedDaily: number
   currentRealSurgery: number
-  currentRealOutpatientSurgery: number
+  currentRealOutpatient: number
   currentRealMisc: number
   currentFixedSurgery: number
-  proposedRealDailyAmount: number
-  proposedFixedDailyAmount: number
+  proposedRealDaily: number
+  proposedFixedDaily: number
   proposedRealSurgery: number
-  proposedRealOutpatientSurgery: number
+  proposedRealOutpatient: number
   proposedRealMisc: number
   proposedFixedSurgery: number
 }
 
 interface PolicyData {
-  // 壽險
   lifeCurrentAmount: number
   lifeProposedAmount: number
   lifeCurrentPremium: number
   lifeProposedPremium: number
-  // 意外
   accidentCurrentDeath: number
   accidentProposedDeath: number
   accidentCurrentDaily: number
   accidentProposedDaily: number
   accidentCurrentMisc: number
   accidentProposedMisc: number
-  // 醫療
   medical: MedicalData
-  // 重大傷病
   criticalType: 'critical_illness' | 'serious_injury'
   criticalCurrentAmount: number
   criticalProposedAmount: number
   criticalCurrentPremium: number
   criticalProposedPremium: number
-  // 癌症
   cancerCurrentLumpSum: number
   cancerProposedLumpSum: number
   cancerCurrentDaily: number
@@ -64,105 +59,85 @@ interface PolicyData {
   cancerProposedSurgery: number
   cancerCurrentChemo: number
   cancerProposedChemo: number
-  // 長照
   ltcCurrentLumpSum: number
   ltcProposedLumpSum: number
   ltcCurrentMonthly: number
   ltcProposedMonthly: number
-  // 總保費
   totalCurrentPremium: number
   totalProposedPremium: number
 }
 
 // ─── Initial State ────────────────────────────────────────────────────────────
 
-const initialClient: ClientInfo = {
-  name: '王小明',
-  birthdate: '1985-03-15',
-  gender: 'male',
-  jobLevel: '1',
+const initClient: ClientInfo = {
+  name: '王小明', birthdate: '1985-03-15', gender: 'male', jobLevel: '1',
 }
 
-const initialPolicy: PolicyData = {
-  lifeCurrentAmount: 300,
-  lifeProposedAmount: 800,
-  lifeCurrentPremium: 18000,
-  lifeProposedPremium: 32000,
-  accidentCurrentDeath: 200,
-  accidentProposedDeath: 500,
-  accidentCurrentDaily: 500,
-  accidentProposedDaily: 1500,
-  accidentCurrentMisc: 0,
-  accidentProposedMisc: 300000,
+const initPolicy: PolicyData = {
+  lifeCurrentAmount: 300, lifeProposedAmount: 800,
+  lifeCurrentPremium: 18000, lifeProposedPremium: 32000,
+  accidentCurrentDeath: 200, accidentProposedDeath: 500,
+  accidentCurrentDaily: 500, accidentProposedDaily: 1500,
+  accidentCurrentMisc: 0, accidentProposedMisc: 300000,
   medical: {
-    currentRealDailyAmount: 1000,
-    currentFixedDailyAmount: 1500,
-    currentRealSurgery: 30000,
-    currentRealOutpatientSurgery: 0,
-    currentRealMisc: 100000,
-    currentFixedSurgery: 20000,
-    proposedRealDailyAmount: 2000,
-    proposedFixedDailyAmount: 2500,
-    proposedRealSurgery: 100000,
-    proposedRealOutpatientSurgery: 50000,
-    proposedRealMisc: 300000,
-    proposedFixedSurgery: 50000,
+    currentRealDaily: 1000, currentFixedDaily: 1500,
+    currentRealSurgery: 30000, currentRealOutpatient: 0,
+    currentRealMisc: 100000, currentFixedSurgery: 20000,
+    proposedRealDaily: 2000, proposedFixedDaily: 2500,
+    proposedRealSurgery: 100000, proposedRealOutpatient: 50000,
+    proposedRealMisc: 300000, proposedFixedSurgery: 50000,
   },
   criticalType: 'critical_illness',
-  criticalCurrentAmount: 100,
-  criticalProposedAmount: 200,
-  criticalCurrentPremium: 12000,
-  criticalProposedPremium: 22000,
-  cancerCurrentLumpSum: 30,
-  cancerProposedLumpSum: 100,
-  cancerCurrentDaily: 2000,
-  cancerProposedDaily: 3000,
-  cancerCurrentSurgery: 50000,
-  cancerProposedSurgery: 150000,
-  cancerCurrentChemo: 10000,
-  cancerProposedChemo: 30000,
-  ltcCurrentLumpSum: 0,
-  ltcProposedLumpSum: 100,
-  ltcCurrentMonthly: 0,
-  ltcProposedMonthly: 30000,
-  totalCurrentPremium: 42000,
-  totalProposedPremium: 86000,
+  criticalCurrentAmount: 100, criticalProposedAmount: 200,
+  criticalCurrentPremium: 12000, criticalProposedPremium: 22000,
+  cancerCurrentLumpSum: 30, cancerProposedLumpSum: 100,
+  cancerCurrentDaily: 2000, cancerProposedDaily: 3000,
+  cancerCurrentSurgery: 50000, cancerProposedSurgery: 150000,
+  cancerCurrentChemo: 10000, cancerProposedChemo: 30000,
+  ltcCurrentLumpSum: 0, ltcProposedLumpSum: 100,
+  ltcCurrentMonthly: 0, ltcProposedMonthly: 30000,
+  totalCurrentPremium: 42000, totalProposedPremium: 86000,
 }
 
-// ─── Editable Number Input ────────────────────────────────────────────────────
+// ─── Editable Input ───────────────────────────────────────────────────────────
 
 interface NumInputProps {
   value: number
   onChange: (v: number) => void
-  prefix?: string
   suffix?: string
-  className?: string
   isProposed?: boolean
-  isZero?: boolean
+  allowZero?: boolean
 }
 
-function NumInput({ value, onChange, prefix, suffix, className, isProposed, isZero }: NumInputProps) {
-  const isEmpty = isZero && value === 0
+function NumInput({ value, onChange, suffix, isProposed, allowZero }: NumInputProps) {
+  const isEmpty = !allowZero && value === 0
   return (
-    <div className="flex items-center gap-1">
-      {prefix && <span className={cn('text-sm shrink-0', isProposed ? 'text-blue-500' : 'text-slate-400')}>{prefix}</span>}
+    <div className="flex items-center gap-1.5 w-full">
       <input
         type="number"
-        value={value === 0 && isEmpty ? '' : value}
+        value={isEmpty ? '' : value}
         placeholder={isEmpty ? '未投保' : '0'}
         onChange={e => onChange(Number(e.target.value) || 0)}
         className={cn(
-          'w-full bg-transparent border-b-2 border-transparent text-right',
-          'focus:outline-none focus:ring-0 focus:border-b-2',
-          'transition-colors duration-150',
-          isProposed
-            ? 'text-blue-600 font-bold text-base focus:border-blue-400 placeholder:text-blue-300'
-            : 'text-slate-400 font-medium text-base focus:border-slate-300 placeholder:text-slate-300',
-          isEmpty && !isProposed && 'italic text-red-400 placeholder:text-red-300',
-          className
+          'w-full rounded-lg px-3 py-2.5 text-right text-base font-bold',
+          'bg-slate-100 border-2 border-transparent',
+          'focus:outline-none focus:border-blue-400 focus:bg-white',
+          'transition-all duration-150',
+          isEmpty
+            ? 'text-red-500 placeholder:text-red-400 placeholder:font-medium'
+            : isProposed
+              ? 'text-blue-700'
+              : 'text-slate-900'
         )}
       />
-      {suffix && <span className={cn('text-xs shrink-0 whitespace-nowrap', isProposed ? 'text-blue-400' : 'text-slate-400')}>{suffix}</span>}
+      {suffix && (
+        <span className={cn(
+          'text-sm font-medium shrink-0 min-w-[2.5rem]',
+          isProposed ? 'text-blue-600' : 'text-slate-600'
+        )}>
+          {suffix}
+        </span>
+      )}
     </div>
   )
 }
@@ -172,14 +147,15 @@ function NumInput({ value, onChange, prefix, suffix, className, isProposed, isZe
 type Status = 'good' | 'warning' | 'danger'
 
 function StatusPill({ status, label }: { status: Status; label?: string }) {
-  const cfg = {
-    good:    { icon: <CheckCircle size={13} />,  cls: 'bg-emerald-50 text-emerald-700 border-emerald-200', text: label || '保障完善' },
-    warning: { icon: <AlertCircle size={13} />,  cls: 'bg-blue-50 text-blue-700 border-blue-200',          text: label || '建議提升' },
-    danger:  { icon: <XCircle size={13} />,      cls: 'text-red-600 bg-red-50 border-red-200',             text: label || '缺口風險' },
-  }[status]
+  const cfg: Record<Status, { icon: React.ReactNode; cls: string; text: string }> = {
+    good:    { icon: <CheckCircle size={13} />, cls: 'bg-emerald-50 text-emerald-700 border-emerald-200', text: '保障完善' },
+    warning: { icon: <AlertCircle size={13} />, cls: 'bg-blue-50 text-blue-700 border-blue-200',          text: '建議提升' },
+    danger:  { icon: <XCircle size={13} />,     cls: 'bg-red-50 text-red-600 border-red-200',             text: '缺口風險' },
+  }
+  const c = cfg[status]
   return (
-    <span className={cn('inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border whitespace-nowrap', cfg.cls)}>
-      {cfg.icon}{cfg.text}
+    <span className={cn('inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border whitespace-nowrap', c.cls)}>
+      {c.icon}{label ?? c.text}
     </span>
   )
 }
@@ -200,54 +176,70 @@ interface RowProps {
 
 function Row({ label, note, hotTag, alertTag, highlight, currentNode, proposedNode, status, statusLabel }: RowProps) {
   return (
-    <tr className={cn('border-b border-slate-100 last:border-0 align-top', highlight ? 'bg-blue-50/30' : 'hover:bg-slate-50/60')}>
-      <td className="py-4 pl-6 pr-4 w-[38%]">
-        <div className="flex flex-col gap-1.5">
+    <tr className={cn('border-b border-slate-100 last:border-0', highlight ? 'bg-blue-50/40' : 'hover:bg-slate-50/50')}>
+      {/* 項目名稱 */}
+      <td className="py-4 pl-5 pr-3 align-middle" style={{ width: '36%' }}>
+        <div className="flex flex-col gap-1">
           <div className="flex flex-wrap items-start gap-1.5">
             {hotTag && (
-              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-orange-100 text-orange-600 text-[10px] font-bold border border-orange-200 shrink-0">
+              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-orange-100 text-orange-600 text-[10px] font-bold border border-orange-200 shrink-0 mt-0.5">
                 <Flame size={9} />最重要
               </span>
             )}
             {alertTag && (
-              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-red-100 text-red-600 text-[10px] font-bold border border-red-200 shrink-0">
-                <BadgeAlert size={9} />保障範圍極窄
+              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-red-100 text-red-600 text-[10px] font-bold border border-red-200 shrink-0 mt-0.5">
+                <BadgeAlert size={9} />保障極窄
               </span>
             )}
-            <span className={cn('text-sm leading-snug', highlight ? 'font-semibold text-slate-800' : 'font-medium text-slate-700')}>
+            <span className={cn('text-sm leading-snug', highlight ? 'font-bold text-slate-900' : 'font-semibold text-slate-800')}>
               {label}
             </span>
           </div>
-          {note && <p className="text-xs text-slate-400 leading-snug">{note}</p>}
+          {note && <p className="text-xs text-slate-500 leading-snug">{note}</p>}
         </div>
       </td>
-      <td className="py-4 px-3 w-[22%]">{currentNode}</td>
-      <td className="py-4 px-3 w-[22%]">{proposedNode}</td>
-      <td className="py-4 pr-6 pl-2 w-[18%]"><StatusPill status={status} label={statusLabel} /></td>
+      {/* 現有方案 */}
+      <td className="py-4 px-3 align-middle" style={{ width: '24%' }}>
+        <div className="flex flex-col gap-0.5">
+          <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">現有</span>
+          {currentNode}
+        </div>
+      </td>
+      {/* 建議方案 */}
+      <td className="py-4 px-3 align-middle" style={{ width: '24%' }}>
+        <div className="flex flex-col gap-0.5">
+          <span className="text-[10px] font-semibold text-blue-400 uppercase tracking-wide">建議</span>
+          {proposedNode}
+        </div>
+      </td>
+      {/* 狀態 */}
+      <td className="py-4 pr-5 pl-2 align-middle" style={{ width: '16%' }}>
+        <StatusPill status={status} label={statusLabel} />
+      </td>
     </tr>
   )
 }
 
-// ─── Summary Card (合計) ──────────────────────────────────────────────────────
+// ─── Summary Row (合計日額) ───────────────────────────────────────────────────
 
-function SummaryRow({ currentTotal, proposedTotal }: { currentTotal: number; proposedTotal: number }) {
+function SummaryRow({ cur, prop }: { cur: number; prop: number }) {
   return (
     <tr>
-      <td colSpan={4} className="px-6 py-3">
-        <div className="rounded-xl bg-slate-800 text-white px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <td colSpan={4} className="px-5 py-3">
+        <div className="rounded-xl bg-slate-800 px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <p className="text-xs text-slate-400 font-semibold uppercase tracking-wide">每日合計保障金額（實支＋定額）</p>
-            <p className="text-[11px] text-slate-500 mt-0.5">自動加總：實支日額 + 定額日額</p>
+            <p className="text-xs font-bold text-slate-300 uppercase tracking-wide">每日合計保障（實支＋定額）</p>
+            <p className="text-[11px] text-slate-500 mt-0.5">實支日額 + 定額日額，即時聯動</p>
           </div>
           <div className="flex items-center gap-6 shrink-0">
             <div className="text-center">
-              <p className="text-xs text-slate-500 mb-1">現有方案</p>
-              <p className="text-xl font-bold text-slate-300 font-mono">NT${currentTotal.toLocaleString()} <span className="text-sm font-normal">/ 日</span></p>
+              <p className="text-xs text-slate-500 mb-1">現有</p>
+              <p className="text-xl font-bold text-slate-200 font-mono">NT${cur.toLocaleString()}<span className="text-sm font-normal ml-1">/ 日</span></p>
             </div>
             <div className="w-px h-8 bg-slate-600" />
             <div className="text-center">
-              <p className="text-xs text-emerald-400 mb-1">建議方案</p>
-              <p className="text-xl font-bold text-emerald-400 font-mono">NT${proposedTotal.toLocaleString()} <span className="text-sm font-normal">/ 日</span></p>
+              <p className="text-xs text-emerald-400 mb-1">建議</p>
+              <p className="text-xl font-bold text-emerald-400 font-mono">NT${prop.toLocaleString()}<span className="text-sm font-normal ml-1">/ 日</span></p>
             </div>
           </div>
         </div>
@@ -256,26 +248,20 @@ function SummaryRow({ currentTotal, proposedTotal }: { currentTotal: number; pro
   )
 }
 
-// ─── Section Card Wrapper ─────────────────────────────────────────────────────
+// ─── Section Wrapper ──────────────────────────────────────────────────────────
 
-interface SectionWrapperProps {
-  title: string
-  subtitle: string
-  icon: React.ReactNode
-  accentColor: string
-  borderColor: string
-  iconBg: string
-  criticalAlert?: string
-  children: React.ReactNode
-  defaultOpen?: boolean
-}
-
-function SectionCard({ title, subtitle, icon, accentColor, borderColor, iconBg, criticalAlert, children, defaultOpen = true }: SectionWrapperProps) {
+function SectionCard({
+  title, subtitle, icon, accentColor, borderColor, iconBg, criticalAlert, children, defaultOpen = true
+}: {
+  title: string; subtitle: string; icon: React.ReactNode
+  accentColor: string; borderColor: string; iconBg: string
+  criticalAlert?: string; children: React.ReactNode; defaultOpen?: boolean
+}) {
   const [open, setOpen] = useState(defaultOpen)
   return (
     <div className={cn('bg-white rounded-2xl shadow-sm border overflow-hidden', borderColor)}>
-      <button onClick={() => setOpen(o => !o)} className="w-full flex items-center justify-between px-6 py-5 hover:bg-slate-50/60 transition-colors">
-        <div className="flex items-center gap-4">
+      <button onClick={() => setOpen(o => !o)} className="w-full flex items-center justify-between px-5 py-4 hover:bg-slate-50/60 transition-colors">
+        <div className="flex items-center gap-3">
           <div className={cn('p-2.5 rounded-xl', iconBg)}>{icon}</div>
           <div className="text-left">
             <h2 className={cn('text-base font-bold', accentColor)}>{title}</h2>
@@ -285,20 +271,20 @@ function SectionCard({ title, subtitle, icon, accentColor, borderColor, iconBg, 
         <span className="text-slate-300">{open ? <ChevronUp size={18} /> : <ChevronDown size={18} />}</span>
       </button>
       {criticalAlert && open && (
-        <div className="mx-6 mb-2 flex items-center gap-2.5 px-4 py-3 rounded-xl bg-red-50 border border-red-200">
+        <div className="mx-5 mb-2 flex items-center gap-2.5 px-4 py-3 rounded-xl bg-red-50 border border-red-200">
           <AlertTriangle size={15} className="text-red-500 shrink-0" />
-          <p className="text-sm font-semibold text-red-600">{criticalAlert}</p>
+          <p className="text-sm font-bold text-red-600">{criticalAlert}</p>
         </div>
       )}
       {open && (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[600px]">
+          <table className="w-full" style={{ minWidth: 580 }}>
             <thead>
-              <tr className="border-t border-b border-slate-100 bg-slate-50/70">
-                <th className="py-3 pl-6 pr-4 text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wider">保障項目</th>
-                <th className="py-3 px-3 text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wider">現有方案</th>
-                <th className="py-3 px-3 text-left text-[11px] font-semibold text-blue-500 uppercase tracking-wider">建議方案</th>
-                <th className="py-3 pr-6 pl-2 text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wider">狀態</th>
+              <tr className="border-t border-b border-slate-100 bg-slate-50">
+                <th className="py-2.5 pl-5 pr-3 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider" style={{ width: '36%' }}>保障項目</th>
+                <th className="py-2.5 px-3 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider" style={{ width: '24%' }}>現有方案</th>
+                <th className="py-2.5 px-3 text-left text-[11px] font-bold text-blue-500 uppercase tracking-wider" style={{ width: '24%' }}>建議方案</th>
+                <th className="py-2.5 pr-5 pl-2 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider" style={{ width: '16%' }}>狀態</th>
               </tr>
             </thead>
             <tbody>{children}</tbody>
@@ -309,49 +295,219 @@ function SectionCard({ title, subtitle, icon, accentColor, borderColor, iconBg, 
   )
 }
 
-// ─── Client Info Card ─────────────────────────────────────────────────────────
+// ─── Modal ────────────────────────────────────────────────────────────────────
+
+function ReportModal({ policy, client, onClose }: { policy: PolicyData; client: ClientInfo; onClose: () => void }) {
+  const premiumDiff = policy.totalProposedPremium - policy.totalCurrentPremium
+  const monthlyDiff = Math.round(premiumDiff / 12)
+  const dailyCur = policy.medical.currentRealDaily + policy.medical.currentFixedDaily
+  const dailyProp = policy.medical.proposedRealDaily + policy.medical.proposedFixedDaily
+  const dailyPct = dailyCur > 0 ? Math.round(((dailyProp - dailyCur) / dailyCur) * 100) : 100
+  const miscCur = policy.medical.currentRealMisc / 10000
+  const miscProp = policy.medical.proposedRealMisc / 10000
+  const lifePct = policy.lifeCurrentAmount > 0
+    ? Math.round(((policy.lifeProposedAmount - policy.lifeCurrentAmount) / policy.lifeCurrentAmount) * 100) : 100
+  const cancerPct = policy.cancerCurrentLumpSum > 0
+    ? Math.round(((policy.cancerProposedLumpSum - policy.cancerCurrentLumpSum) / policy.cancerCurrentLumpSum) * 100) : 100
+
+  const upgrades = [
+    policy.accidentCurrentMisc === 0 && {
+      title: '新增意外實支實付',
+      value: `NT$${(policy.accidentProposedMisc / 10000).toFixed(0)}萬雜費保障`,
+      monthly: Math.round((policy.accidentProposedMisc > 0 ? 3000 : 0)),
+    },
+    policy.ltcCurrentMonthly === 0 && {
+      title: '新增長照失能扶助',
+      value: `每月 NT$${policy.ltcProposedMonthly.toLocaleString()} 給付`,
+      monthly: Math.round(2500),
+    },
+    policy.medical.currentRealOutpatient === 0 && {
+      title: '新增門診手術保障',
+      value: `NT$${(policy.medical.proposedRealOutpatient / 10000).toFixed(0)}萬 / 次`,
+      monthly: Math.round(800),
+    },
+  ].filter(Boolean) as { title: string; value: string; monthly: number }[]
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 backdrop-blur-sm overflow-y-auto py-8 px-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl relative">
+        {/* Modal Header */}
+        <div className="bg-gradient-to-r from-blue-700 to-blue-600 rounded-t-2xl px-6 py-5 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-white/20 rounded-xl"><FileText size={18} className="text-white" /></div>
+            <div>
+              <h2 className="text-lg font-bold text-white">保障規劃比較分析報告</h2>
+              <p className="text-xs text-blue-200 mt-0.5">{client.name || '客戶'} · {new Date().toLocaleDateString('zh-TW')}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-colors">
+            <X size={20} className="text-white" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-5">
+          {/* 重大疾病警告 */}
+          {policy.criticalType === 'critical_illness' && (
+            <div className="flex items-start gap-3 p-4 rounded-xl bg-red-50 border-2 border-red-300">
+              <AlertTriangle size={18} className="text-red-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-bold text-red-700">⚠️ 重大疾病險保障範圍嚴重不足</p>
+                <p className="text-sm text-red-600 mt-1 font-semibold">
+                  舊型重大疾病僅保障 7 項，且定義嚴苛，須達末期才能理賠。
+                  建議立即升級為「重大傷病險（逾22萬項）」，理賠標準與健保卡一致，保障更全面。
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* 保費大數據 */}
+          <div className="rounded-xl border border-slate-200 overflow-hidden">
+            <div className="bg-slate-800 px-5 py-3">
+              <p className="text-sm font-bold text-white flex items-center gap-2">
+                <BarChart3 size={15} />保費大數據對比
+              </p>
+            </div>
+            <div className="grid grid-cols-3 divide-x divide-slate-100">
+              <div className="p-4 text-center">
+                <p className="text-xs text-slate-500 mb-1">現有年繳</p>
+                <p className="text-2xl font-bold text-slate-700 font-mono">
+                  {(policy.totalCurrentPremium / 10000).toFixed(1)}<span className="text-base">萬</span>
+                </p>
+              </div>
+              <div className="p-4 text-center bg-blue-50">
+                <p className="text-xs text-blue-500 mb-1">建議年繳</p>
+                <p className="text-2xl font-bold text-blue-700 font-mono">
+                  {(policy.totalProposedPremium / 10000).toFixed(1)}<span className="text-base">萬</span>
+                </p>
+              </div>
+              <div className={cn('p-4 text-center', premiumDiff > 0 ? 'bg-orange-50' : 'bg-emerald-50')}>
+                <p className="text-xs text-slate-500 mb-1">每月增加</p>
+                <p className={cn('text-2xl font-bold font-mono', premiumDiff > 0 ? 'text-orange-600' : 'text-emerald-600')}>
+                  {premiumDiff > 0 ? '+' : ''}{monthlyDiff.toLocaleString()}
+                  <span className="text-base">元</span>
+                </p>
+              </div>
+            </div>
+            {/* Bar comparison */}
+            <div className="px-5 py-4 border-t border-slate-100 space-y-2.5">
+              {[
+                { label: '現有方案', val: policy.totalCurrentPremium, max: policy.totalProposedPremium, cls: 'bg-slate-400' },
+                { label: '建議方案', val: policy.totalProposedPremium, max: policy.totalProposedPremium, cls: 'bg-blue-500' },
+              ].map((b, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <span className="text-xs text-slate-500 w-16 shrink-0">{b.label}</span>
+                  <div className="flex-1 bg-slate-100 rounded-full h-4 overflow-hidden">
+                    <div className={cn('h-full rounded-full transition-all duration-700', b.cls)}
+                      style={{ width: `${(b.val / b.max) * 100}%` }} />
+                  </div>
+                  <span className="text-sm font-bold text-slate-800 font-mono w-24 text-right">
+                    NT${b.val.toLocaleString()}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* 保障升級清單 */}
+          {upgrades.length > 0 && (
+            <div className="rounded-xl border border-emerald-200 overflow-hidden">
+              <div className="bg-emerald-600 px-5 py-3">
+                <p className="text-sm font-bold text-white flex items-center gap-2">
+                  <Zap size={15} />新增保障項目
+                </p>
+              </div>
+              <div className="divide-y divide-slate-100">
+                {upgrades.map((u, i) => (
+                  <div key={i} className="flex items-center justify-between px-5 py-4">
+                    <div>
+                      <p className="text-sm font-bold text-slate-800">{u.title}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">{u.value}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-emerald-600 font-semibold">月均僅需</p>
+                      <p className="text-base font-bold text-emerald-700 font-mono">+${u.monthly.toLocaleString()}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 核心價值主張 */}
+          <div className="rounded-xl border border-blue-200 bg-blue-50 p-5">
+            <p className="text-sm font-bold text-blue-800 flex items-center gap-2 mb-3">
+              <TrendingUp size={15} />核心規劃價值
+            </p>
+            <ul className="space-y-2.5">
+              {[
+                `每年僅增加 NT$${premiumDiff.toLocaleString()} 預算，醫療雜費保障從 ${miscCur}萬 補足至 ${miscProp}萬`,
+                `住院日額合計從 NT$${dailyCur.toLocaleString()} 提升至 NT$${dailyProp.toLocaleString()}，增幅 ${dailyPct}%`,
+                `身故保障從 ${policy.lifeCurrentAmount}萬 躍升至 ${policy.lifeProposedAmount}萬，提升 ${lifePct}%`,
+                cancerPct > 0 ? `癌症初次罹患一次金從 ${policy.cancerCurrentLumpSum}萬 提升至 ${policy.cancerProposedLumpSum}萬，增幅 ${cancerPct}%` : null,
+                policy.ltcCurrentMonthly === 0 ? `全新補足長照缺口：每月 NT$${policy.ltcProposedMonthly.toLocaleString()} 失能扶助，可給付至終身` : null,
+              ].filter(Boolean).map((item, i) => (
+                <li key={i} className="flex items-start gap-2.5">
+                  <CheckCircle size={14} className="text-blue-500 shrink-0 mt-0.5" />
+                  <span className="text-sm text-blue-900 font-medium leading-snug">{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Footer note */}
+          <p className="text-xs text-slate-400 text-center">本報告依填寫數據自動產生，僅供規劃參考，以實際保單條款為準。</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Client Card ──────────────────────────────────────────────────────────────
 
 function ClientCard({ client, onChange }: { client: ClientInfo; onChange: (c: ClientInfo) => void }) {
   const set = (k: keyof ClientInfo) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     onChange({ ...client, [k]: e.target.value })
 
-  const inputCls = 'w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all placeholder:text-slate-300'
+  const fieldCls = 'w-full bg-slate-100 border-2 border-transparent rounded-xl px-4 py-3 text-sm font-semibold text-slate-900 focus:outline-none focus:border-blue-400 focus:bg-white transition-all'
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
       <div className="flex items-center gap-3 mb-5">
         <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600"><User size={18} /></div>
         <div>
-          <h2 className="text-base font-bold text-slate-800">客戶基本資料</h2>
+          <h2 className="text-base font-bold text-slate-900">客戶基本資料</h2>
           <p className="text-xs text-slate-400 mt-0.5">被保險人資訊</p>
         </div>
       </div>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* 2-col grid on all sizes */}
+      <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-xs font-semibold text-slate-500 mb-1.5">客戶姓名</label>
-          <input value={client.name} onChange={set('name')} placeholder="王小明" className={inputCls} />
-        </div>
-        <div>
-          <label className="block text-xs font-semibold text-slate-500 mb-1.5">
-            <span className="inline-flex items-center gap-1"><Calendar size={11} />出生年月日</span>
+          <label className="block text-xs font-bold text-slate-600 mb-1.5 flex items-center gap-1">
+            <User size={11} />客戶姓名
           </label>
-          <input type="date" value={client.birthdate} onChange={set('birthdate')} className={inputCls} />
+          <input value={client.name} onChange={set('name')} placeholder="王小明" className={fieldCls} />
         </div>
         <div>
-          <label className="block text-xs font-semibold text-slate-500 mb-1.5">性別</label>
-          <select value={client.gender} onChange={set('gender')} className={inputCls}>
+          <label className="block text-xs font-bold text-slate-600 mb-1.5 flex items-center gap-1">
+            <Calendar size={11} />出生年月日
+          </label>
+          <input type="date" value={client.birthdate} onChange={set('birthdate')} className={fieldCls} />
+        </div>
+        <div>
+          <label className="block text-xs font-bold text-slate-600 mb-1.5">性別</label>
+          <select value={client.gender} onChange={set('gender')} className={fieldCls}>
             <option value="male">男性</option>
             <option value="female">女性</option>
           </select>
         </div>
         <div>
-          <label className="block text-xs font-semibold text-slate-500 mb-1.5">
-            <span className="inline-flex items-center gap-1"><Briefcase size={11} />職業等級</span>
+          <label className="block text-xs font-bold text-slate-600 mb-1.5 flex items-center gap-1">
+            <Briefcase size={11} />職業等級
           </label>
-          <select value={client.jobLevel} onChange={set('jobLevel')} className={inputCls}>
-            <option value="1">1 類（內勤/文職）</option>
-            <option value="2">2 類（業務/輕勞動）</option>
-            <option value="3">3 類（技術/輕機械）</option>
+          <select value={client.jobLevel} onChange={set('jobLevel')} className={fieldCls}>
+            <option value="1">1 類（內勤 / 文職）</option>
+            <option value="2">2 類（業務 / 輕勞動）</option>
+            <option value="3">3 類（技術 / 輕機械）</option>
             <option value="4">4 類（重體力勞動）</option>
           </select>
         </div>
@@ -360,131 +516,24 @@ function ClientCard({ client, onChange }: { client: ClientInfo; onChange: (c: Cl
   )
 }
 
-// ─── Optimization Summary ─────────────────────────────────────────────────────
-
-interface SummaryProps {
-  policy: PolicyData
-  client: ClientInfo
-}
-
-function OptimizationSummary({ policy, client }: SummaryProps) {
-  const premiumDiff = policy.totalProposedPremium - policy.totalCurrentPremium
-  const lifePct = policy.lifeCurrentAmount > 0
-    ? Math.round(((policy.lifeProposedAmount - policy.lifeCurrentAmount) / policy.lifeCurrentAmount) * 100) : 0
-  const miscCurrent = policy.medical.currentRealMisc / 10000
-  const miscProposed = policy.medical.proposedRealMisc / 10000
-  const miscDiff = miscProposed - miscCurrent
-  const dailyCurrent = policy.medical.currentRealDailyAmount + policy.medical.currentFixedDailyAmount
-  const dailyProposed = policy.medical.proposedRealDailyAmount + policy.medical.proposedFixedDailyAmount
-  const dailyPct = dailyCurrent > 0 ? Math.round(((dailyProposed - dailyCurrent) / dailyCurrent) * 100) : 0
-
-  const cards = [
-    {
-      label: '年保費增加',
-      value: `+NT$${premiumDiff.toLocaleString()}`,
-      sub: `現有 ${policy.totalCurrentPremium.toLocaleString()} → 建議 ${policy.totalProposedPremium.toLocaleString()}`,
-      color: 'text-violet-600', bg: 'bg-violet-50', border: 'border-violet-100',
-    },
-    {
-      label: '身故保障提升',
-      value: `+${lifePct}%`,
-      sub: `${policy.lifeCurrentAmount} 萬 → ${policy.lifeProposedAmount} 萬`,
-      color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100',
-    },
-    {
-      label: '醫療雜費額度提升',
-      value: `+${miscDiff} 萬`,
-      sub: `${miscCurrent} 萬 → ${miscProposed} 萬`,
-      color: 'text-teal-600', bg: 'bg-teal-50', border: 'border-teal-100',
-    },
-    {
-      label: '住院日額合計提升',
-      value: `+${dailyPct}%`,
-      sub: `NT$${dailyCurrent.toLocaleString()} → NT$${dailyProposed.toLocaleString()} / 日`,
-      color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100',
-    },
-  ]
-
-  return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mt-4">
-      <div className="px-6 py-5 border-b border-slate-100 flex items-center gap-3">
-        <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-600"><BarChart3 size={18} /></div>
-        <div>
-          <h2 className="text-base font-bold text-slate-800">優化效益總結</h2>
-          <p className="text-xs text-slate-400 mt-0.5">
-            {client.name || '客戶'} 的保障提升分析（數據即時聯動）
-          </p>
-        </div>
-      </div>
-      <div className="p-6">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          {cards.map((c, i) => (
-            <div key={i} className={cn('rounded-xl border p-4', c.bg, c.border)}>
-              <p className={cn('text-2xl font-bold font-mono', c.color)}>{c.value}</p>
-              <p className="text-sm font-semibold text-slate-700 mt-1">{c.label}</p>
-              <p className="text-xs text-slate-400 mt-0.5 leading-snug">{c.sub}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Premium bar */}
-        <div className="rounded-xl bg-slate-50 border border-slate-100 p-5">
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-4">年繳保費對比</p>
-          <div className="space-y-3">
-            {[
-              { label: '現有方案合計', val: policy.totalCurrentPremium, max: policy.totalProposedPremium, color: 'bg-slate-300' },
-              { label: '建議方案合計', val: policy.totalProposedPremium, max: policy.totalProposedPremium, color: 'bg-blue-500' },
-            ].map((b, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <span className="text-xs text-slate-500 w-28 shrink-0">{b.label}</span>
-                <div className="flex-1 bg-slate-200 rounded-full h-3 overflow-hidden">
-                  <div
-                    className={cn('h-full rounded-full transition-all duration-500', b.color)}
-                    style={{ width: `${Math.min((b.val / b.max) * 100, 100)}%` }}
-                  />
-                </div>
-                <span className="text-sm font-bold text-slate-700 font-mono w-28 text-right">
-                  NT${b.val.toLocaleString()}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {policy.criticalType === 'critical_illness' && (
-          <div className="mt-4 flex items-start gap-2.5 px-4 py-3 rounded-xl bg-red-50 border border-red-200">
-            <AlertTriangle size={15} className="text-red-500 shrink-0 mt-0.5" />
-            <p className="text-sm text-red-700 font-medium">
-              ⚠️ 重大疾病(7項)保障範圍極窄，建議優先升級為重大傷病險，此為本次規劃最關鍵優化項目。
-            </p>
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
-
 // ─── App ──────────────────────────────────────────────────────────────────────
 
 export default function App() {
-  const [client, setClient] = useState<ClientInfo>(initialClient)
-  const [p, setP] = useState<PolicyData>(initialPolicy)
+  const [client, setClient] = useState<ClientInfo>(initClient)
+  const [p, setP] = useState<PolicyData>(initPolicy)
+  const [showModal, setShowModal] = useState(false)
 
-  const set = useCallback(<K extends keyof PolicyData>(key: K, value: PolicyData[K]) => {
-    setP(prev => ({ ...prev, [key]: value }))
-  }, [])
+  const set = useCallback(<K extends keyof PolicyData>(key: K, val: PolicyData[K]) =>
+    setP(prev => ({ ...prev, [key]: val })), [])
 
-  const setMed = useCallback(<K extends keyof MedicalData>(key: K, value: number) => {
-    setP(prev => ({ ...prev, medical: { ...prev.medical, [key]: value } }))
-  }, [])
+  const setMed = useCallback(<K extends keyof MedicalData>(key: K, val: number) =>
+    setP(prev => ({ ...prev, medical: { ...prev.medical, [key]: val } })), [])
 
-  const dailyCurrent = p.medical.currentRealDailyAmount + p.medical.currentFixedDailyAmount
-  const dailyProposed = p.medical.proposedRealDailyAmount + p.medical.proposedFixedDailyAmount
+  const dailyCur = p.medical.currentRealDaily + p.medical.currentFixedDaily
+  const dailyProp = p.medical.proposedRealDaily + p.medical.proposedFixedDaily
 
-  const getLifeStatus = (): Status => p.lifeProposedAmount >= 500 ? 'good' : 'warning'
-  const getAccMiscStatus = (): Status => p.accidentCurrentMisc === 0 ? 'danger' : p.accidentProposedMisc > p.accidentCurrentMisc ? 'warning' : 'good'
-  const getMiscStatus = (): Status => p.medical.proposedRealMisc >= 300000 ? 'good' : 'warning'
-  const getCriticalStatus = (): Status => p.criticalType === 'critical_illness' ? 'danger' : p.criticalProposedAmount > p.criticalCurrentAmount ? 'warning' : 'good'
+  const accidentMiscStatus = (): Status => p.accidentCurrentMisc === 0 ? 'danger' : p.accidentProposedMisc > p.accidentCurrentMisc ? 'warning' : 'good'
+  const criticalStatus = (): Status => p.criticalType === 'critical_illness' ? 'danger' : p.criticalProposedAmount > p.criticalCurrentAmount ? 'warning' : 'good'
 
   return (
     <div className="min-h-screen bg-slate-50" style={{ fontFamily: "'Noto Sans TC', sans-serif" }}>
@@ -494,8 +543,8 @@ export default function App() {
       <header className="bg-white border-b border-slate-200 sticky top-0 z-20 shadow-sm">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
-              <Shield size={16} className="text-white" />
+            <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center shadow-sm">
+              <Shield size={17} className="text-white" />
             </div>
             <div>
               <h1 className="text-base font-bold text-slate-900 leading-none">保險規劃分析工具</h1>
@@ -504,250 +553,202 @@ export default function App() {
           </div>
           {client.name && (
             <div className="hidden sm:flex items-center gap-2 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2">
-              <User size={13} className="text-blue-500" />
-              <span className="text-xs text-blue-700 font-semibold">{client.name}</span>
+              <User size={12} className="text-blue-500" />
+              <span className="text-xs font-bold text-blue-700">{client.name}</span>
             </div>
           )}
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-4">
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6 space-y-4">
 
-        {/* Client Info */}
+        {/* 客戶資料 */}
         <ClientCard client={client} onChange={setClient} />
 
         {/* 壽險 */}
-        <SectionCard
-          title="壽險" subtitle="身故保障"
-          icon={<Shield size={18} />}
-          accentColor="text-blue-600" borderColor="border-blue-100"
-          iconBg="bg-blue-50 text-blue-600"
-        >
-          <Row
-            label="身故保障額度"
-            note="建議提升至家庭年收入 10 倍以上"
+        <SectionCard title="壽險" subtitle="身故保障" icon={<Shield size={18} />}
+          accentColor="text-blue-700" borderColor="border-blue-100" iconBg="bg-blue-50 text-blue-600">
+          <Row label="身故保障額度" note="建議提升至家庭年收入 10 倍以上"
             currentNode={<NumInput value={p.lifeCurrentAmount} onChange={v => set('lifeCurrentAmount', v)} suffix="萬" />}
             proposedNode={<NumInput value={p.lifeProposedAmount} onChange={v => set('lifeProposedAmount', v)} suffix="萬" isProposed />}
-            status={getLifeStatus()}
-          />
-          <Row
-            label="年繳保費"
-            currentNode={<NumInput value={p.lifeCurrentPremium} onChange={v => set('lifeCurrentPremium', v)} prefix="NT$" />}
-            proposedNode={<NumInput value={p.lifeProposedPremium} onChange={v => set('lifeProposedPremium', v)} prefix="NT$" isProposed />}
-            status="good"
-          />
+            status={p.lifeProposedAmount >= 500 ? 'good' : 'warning'} />
+          <Row label="年繳保費"
+            currentNode={<NumInput value={p.lifeCurrentPremium} onChange={v => set('lifeCurrentPremium', v)} suffix="元" allowZero />}
+            proposedNode={<NumInput value={p.lifeProposedPremium} onChange={v => set('lifeProposedPremium', v)} suffix="元" isProposed allowZero />}
+            status="good" />
         </SectionCard>
 
         {/* 意外險 */}
-        <SectionCard
-          title="意外險" subtitle="意外身故・住院・實支"
-          icon={<AlertTriangle size={18} />}
-          accentColor="text-orange-500" borderColor="border-orange-100"
-          iconBg="bg-orange-50 text-orange-500"
-        >
-          <Row
-            label="意外身故"
+        <SectionCard title="意外險" subtitle="意外身故・住院・實支" icon={<AlertTriangle size={18} />}
+          accentColor="text-orange-600" borderColor="border-orange-100" iconBg="bg-orange-50 text-orange-500">
+          <Row label="意外身故"
             currentNode={<NumInput value={p.accidentCurrentDeath} onChange={v => set('accidentCurrentDeath', v)} suffix="萬" />}
             proposedNode={<NumInput value={p.accidentProposedDeath} onChange={v => set('accidentProposedDeath', v)} suffix="萬" isProposed />}
-            status={p.accidentProposedDeath >= 400 ? 'good' : 'warning'}
-          />
-          <Row
-            label="意外住院日額"
-            currentNode={<NumInput value={p.accidentCurrentDaily} onChange={v => set('accidentCurrentDaily', v)} prefix="NT$" suffix="/ 日" />}
-            proposedNode={<NumInput value={p.accidentProposedDaily} onChange={v => set('accidentProposedDaily', v)} prefix="NT$" suffix="/ 日" isProposed />}
-            status="warning"
-          />
-          <Row
-            label="意外實支實付（雜費上限）"
-            note="目前最大保障缺口，強烈建議優先補足"
-            highlight hotTag
-            currentNode={<NumInput value={p.accidentCurrentMisc} onChange={v => set('accidentCurrentMisc', v)} prefix="NT$" isZero />}
-            proposedNode={<NumInput value={p.accidentProposedMisc} onChange={v => set('accidentProposedMisc', v)} prefix="NT$" isProposed />}
-            status={getAccMiscStatus()}
-            statusLabel={p.accidentCurrentMisc === 0 ? '缺口風險' : undefined}
-          />
+            status={p.accidentProposedDeath >= 400 ? 'good' : 'warning'} />
+          <Row label="意外住院日額"
+            currentNode={<NumInput value={p.accidentCurrentDaily} onChange={v => set('accidentCurrentDaily', v)} suffix="元/日" />}
+            proposedNode={<NumInput value={p.accidentProposedDaily} onChange={v => set('accidentProposedDaily', v)} suffix="元/日" isProposed />}
+            status="warning" />
+          <Row label="意外實支（雜費上限）" note="目前最大保障缺口，建議優先補足" highlight hotTag
+            currentNode={<NumInput value={p.accidentCurrentMisc} onChange={v => set('accidentCurrentMisc', v)} suffix="元" />}
+            proposedNode={<NumInput value={p.accidentProposedMisc} onChange={v => set('accidentProposedMisc', v)} suffix="元" isProposed />}
+            status={accidentMiscStatus()} />
         </SectionCard>
 
         {/* 醫療險 */}
-        <SectionCard
-          title="醫療險" subtitle="實支實付・定額給付"
-          icon={<Activity size={18} />}
-          accentColor="text-teal-600" borderColor="border-teal-100"
-          iconBg="bg-teal-50 text-teal-600"
-        >
+        <SectionCard title="醫療險" subtitle="實支實付・定額給付" icon={<Activity size={18} />}
+          accentColor="text-teal-700" borderColor="border-teal-100" iconBg="bg-teal-50 text-teal-600">
           <Row label="【實支】住院日額"
-            currentNode={<NumInput value={p.medical.currentRealDailyAmount} onChange={v => setMed('currentRealDailyAmount', v)} prefix="NT$" suffix="/ 日" />}
-            proposedNode={<NumInput value={p.medical.proposedRealDailyAmount} onChange={v => setMed('proposedRealDailyAmount', v)} prefix="NT$" suffix="/ 日" isProposed />}
-            status="warning"
-          />
+            currentNode={<NumInput value={p.medical.currentRealDaily} onChange={v => setMed('currentRealDaily', v)} suffix="元/日" />}
+            proposedNode={<NumInput value={p.medical.proposedRealDaily} onChange={v => setMed('proposedRealDaily', v)} suffix="元/日" isProposed />}
+            status="warning" />
           <Row label="【實支】住院手術"
-            currentNode={<NumInput value={p.medical.currentRealSurgery} onChange={v => setMed('currentRealSurgery', v)} prefix="NT$" suffix="/ 次" />}
-            proposedNode={<NumInput value={p.medical.proposedRealSurgery} onChange={v => setMed('proposedRealSurgery', v)} prefix="NT$" suffix="/ 次" isProposed />}
-            status="warning"
-          />
+            currentNode={<NumInput value={p.medical.currentRealSurgery} onChange={v => setMed('currentRealSurgery', v)} suffix="元/次" />}
+            proposedNode={<NumInput value={p.medical.proposedRealSurgery} onChange={v => setMed('proposedRealSurgery', v)} suffix="元/次" isProposed />}
+            status="warning" />
           <Row label="【實支】門診手術"
-            currentNode={<NumInput value={p.medical.currentRealOutpatientSurgery} onChange={v => setMed('currentRealOutpatientSurgery', v)} prefix="NT$" suffix="/ 次" isZero />}
-            proposedNode={<NumInput value={p.medical.proposedRealOutpatientSurgery} onChange={v => setMed('proposedRealOutpatientSurgery', v)} prefix="NT$" suffix="/ 次" isProposed />}
-            status={p.medical.currentRealOutpatientSurgery === 0 ? 'danger' : 'warning'}
-          />
-          <Row
-            label="【實支】雜費上限"
-            note="涵蓋自費醫材、新式藥物、達文西手術費等"
-            highlight hotTag
-            currentNode={<NumInput value={p.medical.currentRealMisc} onChange={v => setMed('currentRealMisc', v)} prefix="NT$" />}
-            proposedNode={<NumInput value={p.medical.proposedRealMisc} onChange={v => setMed('proposedRealMisc', v)} prefix="NT$" isProposed />}
-            status={getMiscStatus()}
-          />
+            currentNode={<NumInput value={p.medical.currentRealOutpatient} onChange={v => setMed('currentRealOutpatient', v)} suffix="元/次" />}
+            proposedNode={<NumInput value={p.medical.proposedRealOutpatient} onChange={v => setMed('proposedRealOutpatient', v)} suffix="元/次" isProposed />}
+            status={p.medical.currentRealOutpatient === 0 ? 'danger' : 'warning'} />
+          <Row label="【實支】雜費上限" note="涵蓋自費醫材、達文西手術、新式藥物" highlight hotTag
+            currentNode={<NumInput value={p.medical.currentRealMisc} onChange={v => setMed('currentRealMisc', v)} suffix="元" />}
+            proposedNode={<NumInput value={p.medical.proposedRealMisc} onChange={v => setMed('proposedRealMisc', v)} suffix="元" isProposed />}
+            status={p.medical.proposedRealMisc >= 300000 ? 'good' : 'warning'} />
           <Row label="【定額】住院日額"
-            currentNode={<NumInput value={p.medical.currentFixedDailyAmount} onChange={v => setMed('currentFixedDailyAmount', v)} prefix="NT$" suffix="/ 日" />}
-            proposedNode={<NumInput value={p.medical.proposedFixedDailyAmount} onChange={v => setMed('proposedFixedDailyAmount', v)} prefix="NT$" suffix="/ 日" isProposed />}
-            status="warning"
-          />
+            currentNode={<NumInput value={p.medical.currentFixedDaily} onChange={v => setMed('currentFixedDaily', v)} suffix="元/日" />}
+            proposedNode={<NumInput value={p.medical.proposedFixedDaily} onChange={v => setMed('proposedFixedDaily', v)} suffix="元/日" isProposed />}
+            status="warning" />
           <Row label="【定額】住院手術"
-            currentNode={<NumInput value={p.medical.currentFixedSurgery} onChange={v => setMed('currentFixedSurgery', v)} prefix="NT$" suffix="/ 次" />}
-            proposedNode={<NumInput value={p.medical.proposedFixedSurgery} onChange={v => setMed('proposedFixedSurgery', v)} prefix="NT$" suffix="/ 次" isProposed />}
-            status="warning"
-          />
-          <SummaryRow currentTotal={dailyCurrent} proposedTotal={dailyProposed} />
+            currentNode={<NumInput value={p.medical.currentFixedSurgery} onChange={v => setMed('currentFixedSurgery', v)} suffix="元/次" />}
+            proposedNode={<NumInput value={p.medical.proposedFixedSurgery} onChange={v => setMed('proposedFixedSurgery', v)} suffix="元/次" isProposed />}
+            status="warning" />
+          <SummaryRow cur={dailyCur} prop={dailyProp} />
         </SectionCard>
 
         {/* 重大傷病險 */}
-        <SectionCard
-          title="重大傷病險" subtitle="重大疾病・重大傷病"
-          icon={<Heart size={18} />}
-          accentColor="text-rose-600" borderColor="border-rose-100"
-          iconBg="bg-rose-50 text-rose-600"
-          criticalAlert={p.criticalType === 'critical_illness' ? '現有保單為「重大疾病(7項)」— 保障範圍極窄，需立即優化！' : undefined}
-        >
-          {/* Toggle row */}
-          <tr className="border-b border-slate-100 bg-rose-50/20">
-            <td className="py-4 pl-6 pr-4">
-              <div className="flex flex-col gap-1">
-                <span className="text-sm font-semibold text-slate-800">保障範圍類型</span>
-                <span className="text-xs text-slate-400">現有保單的保障類型</span>
-              </div>
+        <SectionCard title="重大傷病險" subtitle="重大疾病 / 重大傷病" icon={<Heart size={18} />}
+          accentColor="text-rose-600" borderColor="border-rose-100" iconBg="bg-rose-50 text-rose-600"
+          criticalAlert={p.criticalType === 'critical_illness' ? '現有保單為「重大疾病(7項)」— 保障範圍極窄，需立即優化！' : undefined}>
+          {/* Toggle */}
+          <tr className="border-b border-slate-100 bg-rose-50/30">
+            <td className="py-4 pl-5 pr-3 align-middle">
+              <span className="text-sm font-bold text-slate-800">現有保障類型</span>
             </td>
-            <td colSpan={2} className="py-4 px-3">
-              <div className="flex items-center gap-2">
-                {(['critical_illness', 'serious_injury'] as const).map(type => (
-                  <button
-                    key={type}
-                    onClick={() => set('criticalType', type)}
+            <td colSpan={2} className="py-4 px-3 align-middle">
+              <div className="flex gap-2 flex-wrap">
+                {([
+                  { val: 'critical_illness', label: '重大疾病（7項）' },
+                  { val: 'serious_injury',   label: '重大傷病（新制）' },
+                ] as const).map(opt => (
+                  <button key={opt.val} onClick={() => set('criticalType', opt.val)}
                     className={cn(
-                      'px-4 py-2 rounded-xl text-sm font-semibold border transition-all',
-                      p.criticalType === type
-                        ? type === 'critical_illness'
-                          ? 'bg-red-600 text-white border-red-600 shadow-sm'
-                          : 'bg-teal-600 text-white border-teal-600 shadow-sm'
-                        : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'
-                    )}
-                  >
-                    {type === 'critical_illness' ? '重大疾病（7項）' : '重大傷病（新制）'}
+                      'px-4 py-2 rounded-xl text-sm font-bold border-2 transition-all',
+                      p.criticalType === opt.val
+                        ? opt.val === 'critical_illness'
+                          ? 'bg-red-600 text-white border-red-600 shadow'
+                          : 'bg-teal-600 text-white border-teal-600 shadow'
+                        : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                    )}>
+                    {opt.label}
                   </button>
                 ))}
               </div>
             </td>
-            <td className="py-4 pr-6 pl-2">
+            <td className="py-4 pr-5 pl-2 align-middle">
               {p.criticalType === 'critical_illness'
                 ? <StatusPill status="danger" label="保障範圍極窄" />
-                : <StatusPill status="good" label="符合新制" />
-              }
+                : <StatusPill status="good" label="符合新制" />}
             </td>
           </tr>
-
-          <Row
-            label="一次給付額度"
-            note={p.criticalType === 'critical_illness' ? '重大疾病7項 vs 重大傷病22萬+項，差距極大' : undefined}
-            highlight
-            alertTag={p.criticalType === 'critical_illness'}
+          <Row label="一次給付額度" highlight alertTag={p.criticalType === 'critical_illness'}
+            note={p.criticalType === 'critical_illness' ? '重大疾病7項定義嚴苛，達末期才理賠' : undefined}
             currentNode={<NumInput value={p.criticalCurrentAmount} onChange={v => set('criticalCurrentAmount', v)} suffix="萬" />}
             proposedNode={<NumInput value={p.criticalProposedAmount} onChange={v => set('criticalProposedAmount', v)} suffix="萬" isProposed />}
-            status={getCriticalStatus()}
-          />
-          <Row
-            label="年繳保費"
-            currentNode={<NumInput value={p.criticalCurrentPremium} onChange={v => set('criticalCurrentPremium', v)} prefix="NT$" />}
-            proposedNode={<NumInput value={p.criticalProposedPremium} onChange={v => set('criticalProposedPremium', v)} prefix="NT$" isProposed />}
-            status="good"
-          />
+            status={criticalStatus()} />
+          <Row label="年繳保費"
+            currentNode={<NumInput value={p.criticalCurrentPremium} onChange={v => set('criticalCurrentPremium', v)} suffix="元" allowZero />}
+            proposedNode={<NumInput value={p.criticalProposedPremium} onChange={v => set('criticalProposedPremium', v)} suffix="元" isProposed allowZero />}
+            status="good" />
         </SectionCard>
 
         {/* 癌症險 */}
-        <SectionCard
-          title="癌症險" subtitle="一次金・住院・化放療"
-          icon={<TrendingUp size={18} />}
-          accentColor="text-violet-600" borderColor="border-violet-100"
-          iconBg="bg-violet-50 text-violet-600"
-        >
+        <SectionCard title="癌症險" subtitle="一次金・住院・化放療" icon={<TrendingUp size={18} />}
+          accentColor="text-violet-700" borderColor="border-violet-100" iconBg="bg-violet-50 text-violet-600">
           <Row label="初次罹癌一次金" highlight
             currentNode={<NumInput value={p.cancerCurrentLumpSum} onChange={v => set('cancerCurrentLumpSum', v)} suffix="萬" />}
             proposedNode={<NumInput value={p.cancerProposedLumpSum} onChange={v => set('cancerProposedLumpSum', v)} suffix="萬" isProposed />}
-            status={p.cancerProposedLumpSum >= 100 ? 'good' : 'warning'}
-          />
+            status={p.cancerProposedLumpSum >= 100 ? 'good' : 'warning'} />
           <Row label="住院日額"
-            currentNode={<NumInput value={p.cancerCurrentDaily} onChange={v => set('cancerCurrentDaily', v)} prefix="NT$" suffix="/ 日" />}
-            proposedNode={<NumInput value={p.cancerProposedDaily} onChange={v => set('cancerProposedDaily', v)} prefix="NT$" suffix="/ 日" isProposed />}
-            status="good"
-          />
+            currentNode={<NumInput value={p.cancerCurrentDaily} onChange={v => set('cancerCurrentDaily', v)} suffix="元/日" />}
+            proposedNode={<NumInput value={p.cancerProposedDaily} onChange={v => set('cancerProposedDaily', v)} suffix="元/日" isProposed />}
+            status="good" />
           <Row label="住院手術"
-            currentNode={<NumInput value={p.cancerCurrentSurgery} onChange={v => set('cancerCurrentSurgery', v)} prefix="NT$" suffix="/ 次" />}
-            proposedNode={<NumInput value={p.cancerProposedSurgery} onChange={v => set('cancerProposedSurgery', v)} prefix="NT$" suffix="/ 次" isProposed />}
-            status="warning"
-          />
-          <Row label="化療／放療補助" note="含標靶治療、免疫療法補助"
-            currentNode={<NumInput value={p.cancerCurrentChemo} onChange={v => set('cancerCurrentChemo', v)} prefix="NT$" suffix="/ 次" />}
-            proposedNode={<NumInput value={p.cancerProposedChemo} onChange={v => set('cancerProposedChemo', v)} prefix="NT$" suffix="/ 次" isProposed />}
-            status="warning"
-          />
+            currentNode={<NumInput value={p.cancerCurrentSurgery} onChange={v => set('cancerCurrentSurgery', v)} suffix="元/次" />}
+            proposedNode={<NumInput value={p.cancerProposedSurgery} onChange={v => set('cancerProposedSurgery', v)} suffix="元/次" isProposed />}
+            status="warning" />
+          <Row label="化療／放療補助" note="含標靶治療、免疫療法"
+            currentNode={<NumInput value={p.cancerCurrentChemo} onChange={v => set('cancerCurrentChemo', v)} suffix="元/次" />}
+            proposedNode={<NumInput value={p.cancerProposedChemo} onChange={v => set('cancerProposedChemo', v)} suffix="元/次" isProposed />}
+            status="warning" />
         </SectionCard>
 
         {/* 長照險 */}
-        <SectionCard
-          title="長照險" subtitle="失能扶助・長期照護"
-          icon={<Star size={18} />}
-          accentColor="text-indigo-600" borderColor="border-indigo-100"
-          iconBg="bg-indigo-50 text-indigo-600"
-        >
+        <SectionCard title="長照險" subtitle="失能扶助・長期照護" icon={<Star size={18} />}
+          accentColor="text-indigo-700" borderColor="border-indigo-100" iconBg="bg-indigo-50 text-indigo-600">
           <Row label="一次給付金" highlight
-            currentNode={<NumInput value={p.ltcCurrentLumpSum} onChange={v => set('ltcCurrentLumpSum', v)} suffix="萬" isZero />}
+            currentNode={<NumInput value={p.ltcCurrentLumpSum} onChange={v => set('ltcCurrentLumpSum', v)} suffix="萬" />}
             proposedNode={<NumInput value={p.ltcProposedLumpSum} onChange={v => set('ltcProposedLumpSum', v)} suffix="萬" isProposed />}
-            status={p.ltcCurrentLumpSum === 0 ? 'danger' : 'good'}
-          />
-          <Row label="每月給付額" highlight note="失能扶助金，最長給付至終身"
-            currentNode={<NumInput value={p.ltcCurrentMonthly} onChange={v => set('ltcCurrentMonthly', v)} prefix="NT$" suffix="/ 月" isZero />}
-            proposedNode={<NumInput value={p.ltcProposedMonthly} onChange={v => set('ltcProposedMonthly', v)} prefix="NT$" suffix="/ 月" isProposed />}
-            status={p.ltcCurrentMonthly === 0 ? 'danger' : 'good'}
-          />
+            status={p.ltcCurrentLumpSum === 0 ? 'danger' : 'good'} />
+          <Row label="每月給付額" highlight note="最長給付至終身"
+            currentNode={<NumInput value={p.ltcCurrentMonthly} onChange={v => set('ltcCurrentMonthly', v)} suffix="元/月" />}
+            proposedNode={<NumInput value={p.ltcProposedMonthly} onChange={v => set('ltcProposedMonthly', v)} suffix="元/月" isProposed />}
+            status={p.ltcCurrentMonthly === 0 ? 'danger' : 'good'} />
         </SectionCard>
 
         {/* 總保費 */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-          <p className="text-sm font-bold text-slate-700 mb-4">年繳總保費（手動填入）</p>
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+          <p className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
+            <TrendingDown size={15} className="text-slate-500" />年繳總保費（手動填入）
+          </p>
           <div className="grid grid-cols-2 gap-4">
             {[
               { label: '現有方案總保費', key: 'totalCurrentPremium' as const, isProposed: false },
               { label: '建議方案總保費', key: 'totalProposedPremium' as const, isProposed: true },
             ].map(f => (
-              <div key={f.key} className={cn('rounded-xl p-4 border', f.isProposed ? 'bg-blue-50 border-blue-100' : 'bg-slate-50 border-slate-100')}>
-                <p className={cn('text-xs font-semibold mb-2', f.isProposed ? 'text-blue-500' : 'text-slate-400')}>{f.label}</p>
-                <NumInput
-                  value={p[f.key]}
-                  onChange={v => set(f.key, v)}
-                  prefix="NT$"
-                  isProposed={f.isProposed}
-                />
+              <div key={f.key} className={cn('rounded-xl p-4 border-2', f.isProposed ? 'bg-blue-50 border-blue-200' : 'bg-slate-50 border-slate-200')}>
+                <p className={cn('text-xs font-bold mb-2', f.isProposed ? 'text-blue-600' : 'text-slate-500')}>{f.label}</p>
+                <NumInput value={p[f.key]} onChange={v => set(f.key, v)} suffix="元" isProposed={f.isProposed} allowZero />
               </div>
             ))}
           </div>
+          {/* Live diff */}
+          <div className="mt-4 flex items-center justify-center gap-3 py-3 rounded-xl bg-slate-50 border border-slate-100">
+            <span className="text-sm text-slate-500 font-medium">每月增加負擔</span>
+            <span className={cn('text-xl font-bold font-mono',
+              p.totalProposedPremium > p.totalCurrentPremium ? 'text-orange-600' : 'text-emerald-600')}>
+              {p.totalProposedPremium > p.totalCurrentPremium ? '+' : ''}
+              NT${Math.round((p.totalProposedPremium - p.totalCurrentPremium) / 12).toLocaleString()}
+            </span>
+            <span className="text-sm text-slate-500 font-medium">元 / 月</span>
+          </div>
         </div>
 
-        {/* Summary */}
-        <OptimizationSummary policy={p} client={client} />
+        {/* CTA Button */}
+        <button
+          onClick={() => setShowModal(true)}
+          className="w-full py-5 rounded-2xl bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold text-lg shadow-lg shadow-blue-200 transition-all duration-200 flex items-center justify-center gap-3 active:scale-[0.98]"
+        >
+          <FileText size={22} />
+          產出比較分析報告
+        </button>
 
-        <footer className="text-center text-xs text-slate-400 pt-4 pb-8">
-          本工具僅供規劃參考，實際保障內容以各保單條款為準。
-        </footer>
+        <p className="text-center text-xs text-slate-400 pb-8">本工具僅供規劃參考，以實際保單條款為準。</p>
       </main>
+
+      {/* Modal */}
+      {showModal && (
+        <ReportModal policy={p} client={client} onClose={() => setShowModal(false)} />
+      )}
     </div>
   )
 }
