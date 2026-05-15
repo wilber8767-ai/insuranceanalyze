@@ -174,14 +174,6 @@ function analyzePolicy(p: PolicyData): {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function calcChange(cur: number, prop: number): string {
-  if (prop <= 0)  return '維持原保單額度'
-  if (cur <= 0)   return '【新增保障】'
-  const pct = Math.round(((prop - cur) / cur) * 100)
-  if (pct === 0)  return '維持現狀'
-  if (pct > 0)    return `提升 ${pct}%`
-  return `調整 ${Math.abs(pct)}%`
-}
 
 // ─── NumInput ─────────────────────────────────────────────────────────────────
 
