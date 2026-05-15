@@ -5,7 +5,7 @@ import {
   Shield, AlertTriangle, Heart, Activity, TrendingUp, Star,
   ChevronDown, ChevronUp, CheckCircle, AlertCircle, XCircle,
   Flame, User, Calendar, Briefcase, BadgeAlert, BarChart3,
-  FileText, X, Zap, PieChart, Minus
+  FileText, X, Zap, PieChart, Minus, PlusCircle
 } from 'lucide-react'
 
 const cn = (...inputs: Parameters<typeof clsx>) => twMerge(clsx(inputs))
@@ -13,58 +13,35 @@ const cn = (...inputs: Parameters<typeof clsx>) => twMerge(clsx(inputs))
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface ClientInfo {
-  name: string
-  birthdate: string
-  gender: string
-  jobLevel: string
+  name: string; birthdate: string; gender: string; jobLevel: string
 }
 
 interface MedicalData {
-  currentRealDaily: number
-  currentFixedDaily: number
-  currentRealSurgery: number
-  currentRealOutpatient: number
-  currentRealMisc: number
-  currentFixedSurgery: number
-  proposedRealDaily: number
-  proposedFixedDaily: number
-  proposedRealSurgery: number
-  proposedRealOutpatient: number
-  proposedRealMisc: number
-  proposedFixedSurgery: number
+  currentRealDaily: number; currentFixedDaily: number
+  currentRealSurgery: number; currentRealOutpatient: number
+  currentRealMisc: number; currentFixedSurgery: number
+  proposedRealDaily: number; proposedFixedDaily: number
+  proposedRealSurgery: number; proposedRealOutpatient: number
+  proposedRealMisc: number; proposedFixedSurgery: number
 }
 
 interface PolicyData {
-  lifeCurrentAmount: number
-  lifeProposedAmount: number
-  lifeCurrentPremium: number
-  lifeProposedPremium: number
-  accidentCurrentDeath: number
-  accidentProposedDeath: number
-  accidentCurrentDaily: number
-  accidentProposedDaily: number
-  accidentCurrentMisc: number
-  accidentProposedMisc: number
+  lifeCurrentAmount: number; lifeProposedAmount: number
+  lifeCurrentPremium: number; lifeProposedPremium: number
+  accidentCurrentDeath: number; accidentProposedDeath: number
+  accidentCurrentDaily: number; accidentProposedDaily: number
+  accidentCurrentMisc: number; accidentProposedMisc: number
   medical: MedicalData
   criticalType: 'critical_illness' | 'serious_injury'
-  criticalCurrentAmount: number
-  criticalProposedAmount: number
-  criticalCurrentPremium: number
-  criticalProposedPremium: number
-  cancerCurrentLumpSum: number
-  cancerProposedLumpSum: number
-  cancerCurrentDaily: number
-  cancerProposedDaily: number
-  cancerCurrentSurgery: number
-  cancerProposedSurgery: number
-  cancerCurrentChemo: number
-  cancerProposedChemo: number
-  ltcCurrentLumpSum: number
-  ltcProposedLumpSum: number
-  ltcCurrentMonthly: number
-  ltcProposedMonthly: number
-  totalCurrentPremium: number
-  totalProposedPremium: number
+  criticalCurrentAmount: number; criticalProposedAmount: number
+  criticalCurrentPremium: number; criticalProposedPremium: number
+  cancerCurrentLumpSum: number; cancerProposedLumpSum: number
+  cancerCurrentDaily: number; cancerProposedDaily: number
+  cancerCurrentSurgery: number; cancerProposedSurgery: number
+  cancerCurrentChemo: number; cancerProposedChemo: number
+  ltcCurrentLumpSum: number; ltcProposedLumpSum: number
+  ltcCurrentMonthly: number; ltcProposedMonthly: number
+  totalCurrentPremium: number; totalProposedPremium: number
 }
 
 // ─── Initial State ────────────────────────────────────────────────────────────
@@ -90,37 +67,128 @@ const initPolicy: PolicyData = {
   criticalType: 'critical_illness',
   criticalCurrentAmount: 100, criticalProposedAmount: 200,
   criticalCurrentPremium: 12000, criticalProposedPremium: 22000,
-  cancerCurrentLumpSum: 30, cancerProposedLumpSum: 100,
-  cancerCurrentDaily: 2000, cancerProposedDaily: 3000,
-  cancerCurrentSurgery: 50000, cancerProposedSurgery: 150000,
-  cancerCurrentChemo: 10000, cancerProposedChemo: 30000,
+  cancerCurrentLumpSum: 0, cancerProposedLumpSum: 100,
+  cancerCurrentDaily: 0, cancerProposedDaily: 3000,
+  cancerCurrentSurgery: 0, cancerProposedSurgery: 150000,
+  cancerCurrentChemo: 0, cancerProposedChemo: 30000,
   ltcCurrentLumpSum: 0, ltcProposedLumpSum: 100,
   ltcCurrentMonthly: 0, ltcProposedMonthly: 30000,
   totalCurrentPremium: 42000, totalProposedPremium: 86000,
 }
 
+// ─── 核心分析邏輯 ─────────────────────────────────────────────────────────────
+
+interface NewItemFlag {
+  category: string   // 顯示名稱，例如「癌症險」
+  subLabel: string   // 子項目，例如「初次罹癌一次金」
+  proposed: number
+}
+
+/**
+ * 掃描所有子項目，凡 currentVal === 0 且 proposedVal > 0 → 判定為【新增】
+ * 回傳新增清單，以及新增保費 vs 強化保費的比例估算
+ */
+function analyzePolicy(p: PolicyData): {
+  newItems: NewItemFlag[]
+  newPremiumRatio: number   // 0–100，新增險種佔新增保費的比例
+  enhancePremiumRatio: number
+} {
+  const newItems: NewItemFlag[] = []
+
+  // 壽險
+  if (p.lifeCurrentAmount === 0 && p.lifeProposedAmount > 0)
+    newItems.push({ category: '壽險', subLabel: '身故保障', proposed: p.lifeProposedAmount })
+
+  // 意外險
+  if (p.accidentCurrentMisc === 0 && p.accidentProposedMisc > 0)
+    newItems.push({ category: '意外險', subLabel: '意外實支實付', proposed: p.accidentProposedMisc })
+
+  // 醫療險
+  if (p.medical.currentRealOutpatient === 0 && p.medical.proposedRealOutpatient > 0)
+    newItems.push({ category: '醫療險', subLabel: '門診手術', proposed: p.medical.proposedRealOutpatient })
+
+  // 重大傷病（類型升級也視為新增）
+  if (p.criticalType === 'critical_illness' && p.criticalProposedAmount > 0)
+    newItems.push({ category: '重大傷病險', subLabel: '升級：7項→22萬項', proposed: p.criticalProposedAmount })
+
+  // 癌症險 — 精確掃描每個子項目
+  if (p.cancerCurrentLumpSum === 0 && p.cancerProposedLumpSum > 0)
+    newItems.push({ category: '癌症險', subLabel: '初次罹癌一次金', proposed: p.cancerProposedLumpSum })
+  if (p.cancerCurrentDaily === 0 && p.cancerProposedDaily > 0)
+    newItems.push({ category: '癌症險', subLabel: '住院日額', proposed: p.cancerProposedDaily })
+  if (p.cancerCurrentSurgery === 0 && p.cancerProposedSurgery > 0)
+    newItems.push({ category: '癌症險', subLabel: '住院手術', proposed: p.cancerProposedSurgery })
+  if (p.cancerCurrentChemo === 0 && p.cancerProposedChemo > 0)
+    newItems.push({ category: '癌症險', subLabel: '化療/放療補助', proposed: p.cancerProposedChemo })
+
+  // 長照險
+  if (p.ltcCurrentLumpSum === 0 && p.ltcProposedLumpSum > 0)
+    newItems.push({ category: '長照險', subLabel: '一次給付金', proposed: p.ltcProposedLumpSum })
+  if (p.ltcCurrentMonthly === 0 && p.ltcProposedMonthly > 0)
+    newItems.push({ category: '長照險', subLabel: '每月給付額', proposed: p.ltcProposedMonthly })
+
+  // ── 保費比例估算 ────────────────────────────────────────────────────────
+  // 方法：找出哪些「大類」被判定有新增子項目，加總這些大類的保費差
+  const premiumDiff = p.totalProposedPremium - p.totalCurrentPremium
+  if (premiumDiff <= 0) return { newItems, newPremiumRatio: 0, enhancePremiumRatio: 100 }
+
+  const newCategories = new Set(newItems.map(i => i.category))
+
+  // 各大類保費差（有新增子項目的大類 → 歸入「新增」）
+  const categoryPremiumDiff: Record<string, number> = {
+    '壽險':    Math.max(p.lifeProposedPremium - p.lifeCurrentPremium, 0),
+    '重大傷病險': Math.max(p.criticalProposedPremium - p.criticalCurrentPremium, 0),
+  }
+
+  // 癌症、長照：若有任何子項目為新增，整個險種保費差歸入新增
+  // 意外、醫療：只有新增子項目的保費比例歸入新增（估算）
+  let newPremiumEst = 0
+
+  if (newCategories.has('癌症險')) {
+    // 整個癌症建議保費差歸入新增（因為整個險種都是從 0 開始）
+    const isCancerFullNew = p.cancerCurrentLumpSum === 0 && p.cancerCurrentDaily === 0
+      && p.cancerCurrentSurgery === 0 && p.cancerCurrentChemo === 0
+    if (isCancerFullNew) {
+      // 用總保費差的 30% 估算（無法精確拆分）
+      newPremiumEst += Math.round(premiumDiff * 0.28)
+    }
+  }
+  if (newCategories.has('長照險')) {
+    newPremiumEst += Math.round(premiumDiff * 0.22)
+  }
+  if (newCategories.has('意外險')) {
+    newPremiumEst += Math.round(premiumDiff * 0.10)
+  }
+  if (newCategories.has('醫療險') && newItems.some(i => i.category === '醫療險')) {
+    newPremiumEst += Math.round(premiumDiff * 0.08)
+  }
+  if (newCategories.has('重大傷病險')) {
+    newPremiumEst += Math.max(categoryPremiumDiff['重大傷病險'], 0)
+  }
+
+  const newPremiumRatio     = Math.min(Math.round((newPremiumEst / premiumDiff) * 100), 100)
+  const enhancePremiumRatio = 100 - newPremiumRatio
+
+  return { newItems, newPremiumRatio, enhancePremiumRatio }
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function calcChange(cur: number, prop: number): string {
-  if (prop <= 0) return '維持原保單額度'
-  if (cur <= 0) return '【新增保障】'
+  if (prop <= 0)  return '維持原保單額度'
+  if (cur <= 0)   return '【新增保障】'
   const pct = Math.round(((prop - cur) / cur) * 100)
-  if (pct === 0) return '維持現狀'
-  if (pct > 0) return `提升 ${pct}%`
+  if (pct === 0)  return '維持現狀'
+  if (pct > 0)    return `提升 ${pct}%`
   return `調整 ${Math.abs(pct)}%`
 }
 
 // ─── NumInput ─────────────────────────────────────────────────────────────────
 
-interface NumInputProps {
-  value: number
-  onChange: (v: number) => void
-  suffix?: string
-  isProposed?: boolean
-  allowZero?: boolean
-}
-
-function NumInput({ value, onChange, suffix, isProposed, allowZero }: NumInputProps) {
+function NumInput({ value, onChange, suffix, isProposed, allowZero }: {
+  value: number; onChange: (v: number) => void
+  suffix?: string; isProposed?: boolean; allowZero?: boolean
+}) {
   const isEmpty = !allowZero && value === 0
   return (
     <div className="flex items-center gap-1.5 w-full">
@@ -129,16 +197,14 @@ function NumInput({ value, onChange, suffix, isProposed, allowZero }: NumInputPr
         value={isEmpty ? '' : value}
         placeholder={isEmpty ? '未投保' : '0'}
         onChange={e => onChange(Number(e.target.value) || 0)}
+        style={{ color: isEmpty ? '#ef4444' : isProposed ? '#1d4ed8' : '#000000' }}
         className={cn(
-          'w-full rounded-lg px-3 py-2.5 text-right text-base font-black',
+          'w-full rounded-lg px-3 py-2.5 text-right text-base font-bold',
           'bg-slate-100 border-2 border-transparent',
           'focus:outline-none focus:border-blue-400 focus:bg-white',
           'transition-all duration-150',
-          isEmpty
-            ? 'text-red-500 placeholder:text-red-400 placeholder:font-medium'
-            : isProposed ? 'text-blue-700' : 'text-black',
+          isEmpty ? 'placeholder:text-red-400 placeholder:font-medium' : '',
         )}
-        style={{ color: isEmpty ? undefined : isProposed ? '#1d4ed8' : '#000000' }}
       />
       {suffix && (
         <span className={cn('text-sm font-semibold shrink-0 min-w-[2.5rem]',
@@ -155,10 +221,10 @@ function NumInput({ value, onChange, suffix, isProposed, allowZero }: NumInputPr
 type Status = 'good' | 'warning' | 'danger' | 'adjusted' | 'maintained'
 
 function SmartStatus({ cur, prop, dangerIfZero }: { cur: number; prop: number; dangerIfZero?: boolean }) {
-  if (dangerIfZero && cur === 0 && prop === 0) return <StatusPill status="danger" label="缺口風險" />
-  if (dangerIfZero && cur === 0 && prop > 0)  return <StatusPill status="warning" label="建議新增" />
-  if (prop > cur)  return <StatusPill status="warning" label="強化提升" />
-  if (prop === cur) return <StatusPill status="good" label="維持現狀" />
+  if (dangerIfZero && cur === 0 && prop === 0) return <StatusPill status="danger"   label="缺口風險" />
+  if (dangerIfZero && cur === 0 && prop > 0)   return <StatusPill status="warning"  label="建議新增" />
+  if (prop > cur)   return <StatusPill status="warning"  label="強化提升" />
+  if (prop === cur) return <StatusPill status="good"     label="維持現狀" />
   if (prop < cur && prop > 0) return <StatusPill status="adjusted" label="額度調整" />
   return <StatusPill status="danger" label="缺口風險" />
 }
@@ -181,12 +247,10 @@ function StatusPill({ status, label }: { status: Status; label: string }) {
 
 // ─── Row ──────────────────────────────────────────────────────────────────────
 
-interface RowProps {
+function Row({ label, note, hotTag, alertTag, highlight, currentNode, proposedNode, statusNode }: {
   label: string; note?: string; hotTag?: boolean; alertTag?: boolean; highlight?: boolean
   currentNode: React.ReactNode; proposedNode: React.ReactNode; statusNode: React.ReactNode
-}
-
-function Row({ label, note, hotTag, alertTag, highlight, currentNode, proposedNode, statusNode }: RowProps) {
+}) {
   return (
     <tr className={cn('border-b border-slate-100 last:border-0', highlight ? 'bg-blue-50/40' : 'hover:bg-slate-50/50')}>
       <td className="py-4 pl-5 pr-3 align-middle" style={{ width: '36%' }}>
@@ -235,7 +299,7 @@ function SummaryRow({ cur, prop }: { cur: number; prop: number }) {
         <div className="rounded-xl bg-slate-800 px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <p className="text-xs font-bold text-slate-300 uppercase tracking-wide">每日合計保障（實支＋定額）</p>
-            <p className="text-[11px] text-slate-500 mt-0.5">實支日額 + 定額日額，即時聯動</p>
+            <p className="text-[11px] text-slate-500 mt-0.5">即時聯動加總</p>
           </div>
           <div className="flex items-center gap-6 shrink-0">
             <div className="text-center">
@@ -310,7 +374,7 @@ function ClientCard({ client, onChange }: { client: ClientInfo; onChange: (c: Cl
   const fieldCls = [
     'w-full block box-border',
     'bg-slate-100 border-2 border-transparent rounded-xl',
-    'px-4 py-3 text-sm font-black text-black',
+    'px-4 py-3 text-sm font-bold text-black',
     'focus:outline-none focus:border-blue-400 focus:bg-white transition-all',
   ].join(' ')
 
@@ -356,43 +420,27 @@ function ClientCard({ client, onChange }: { client: ClientInfo; onChange: (c: Cl
   )
 }
 
-// ─── ReportModal (全面升級版) ─────────────────────────────────────────────────
+// ─── ReportModal ──────────────────────────────────────────────────────────────
 
-function ReportModal({ policy, client, onClose }: { policy: PolicyData; client: ClientInfo; onClose: () => void }) {
-  const premiumDiff   = policy.totalProposedPremium - policy.totalCurrentPremium
-  const monthlyDiff   = Math.round(premiumDiff / 12)
-  const premiumPct    = policy.totalCurrentPremium > 0
+function ReportModal({ policy, client, onClose }: {
+  policy: PolicyData; client: ClientInfo; onClose: () => void
+}) {
+  const premiumDiff  = policy.totalProposedPremium - policy.totalCurrentPremium
+  const monthlyDiff  = Math.round(premiumDiff / 12)
+  const premiumPct   = policy.totalCurrentPremium > 0
     ? Math.round((premiumDiff / policy.totalCurrentPremium) * 100) : 0
+  const maxPremium   = Math.max(policy.totalProposedPremium, policy.totalCurrentPremium)
 
   const dailyCur  = policy.medical.currentRealDaily  + policy.medical.currentFixedDaily
   const dailyProp = policy.medical.proposedRealDaily + policy.medical.proposedFixedDaily
 
-  // ── 新增保障清單 ──────────────────────────────────────────────────────────
-  const upgrades: { title: string; detail: string; annualEst: number }[] = []
+  // ── 精確分析 ──────────────────────────────────────────────────────────────
+  const { newItems, newPremiumRatio, enhancePremiumRatio } = analyzePolicy(policy)
 
-  if (policy.accidentCurrentMisc === 0 && policy.accidentProposedMisc > 0)
-    upgrades.push({ title: '新增意外實支實付', detail: `雜費上限 NT$${(policy.accidentProposedMisc / 10000).toFixed(0)} 萬`, annualEst: 9600 })
-  if (policy.medical.currentRealOutpatient === 0 && policy.medical.proposedRealOutpatient > 0)
-    upgrades.push({ title: '新增門診手術保障', detail: `NT$${(policy.medical.proposedRealOutpatient / 10000).toFixed(0)} 萬 / 次`, annualEst: 6000 })
-  if ((policy.ltcProposedLumpSum > 0 || policy.ltcProposedMonthly > 0) && policy.ltcCurrentMonthly === 0 && policy.ltcCurrentLumpSum === 0)
-    upgrades.push({
-      title: '新增長照失能扶助',
-      detail: policy.ltcProposedMonthly > 0 ? `每月 NT$${policy.ltcProposedMonthly.toLocaleString()}，最長至終身` : `一次金 NT$${policy.ltcProposedLumpSum} 萬`,
-      annualEst: Math.round(premiumDiff * 0.28),
-    })
-  if (policy.criticalType === 'critical_illness')
-    upgrades.push({
-      title: '升級重大傷病險',
-      detail: '重大疾病(7項) → 重大傷病(逾22萬項)',
-      annualEst: Math.max(policy.criticalProposedPremium - policy.criticalCurrentPremium, 0),
-    })
+  // 去重：同一大類只顯示一次 pill
+  const newCategorySet = Array.from(new Set(newItems.map(i => i.category)))
 
-  // ── 預算分配計算 ──────────────────────────────────────────────────────────
-  const totalNewAnnual      = upgrades.reduce((s, u) => s + u.annualEst, 0)
-  const upgradeRatio        = premiumDiff > 0 ? Math.min(Math.round((totalNewAnnual / premiumDiff) * 100), 100) : 0
-  const enhanceRatio        = 100 - upgradeRatio
-
-  // ── 保障增幅（平均，用於高槓桿句） ───────────────────────────────────────
+  // ── 平均保障增幅（高槓桿句） ──────────────────────────────────────────────
   const pctSamples: number[] = []
   if (policy.lifeCurrentAmount > 0 && policy.lifeProposedAmount > policy.lifeCurrentAmount)
     pctSamples.push(Math.round(((policy.lifeProposedAmount - policy.lifeCurrentAmount) / policy.lifeCurrentAmount) * 100))
@@ -405,32 +453,38 @@ function ReportModal({ policy, client, onClose }: { policy: PolicyData; client: 
   const avgBoostPct = pctSamples.length > 0 ? Math.round(pctSamples.reduce((a, b) => a + b, 0) / pctSamples.length) : 0
 
   // ── 核心論點 ──────────────────────────────────────────────────────────────
-  const insights: { text: string; bold: string }[] = []
+  const insights: { label: string; value: string; isNew?: boolean }[] = []
 
-  if (policy.lifeProposedAmount > 0 && policy.lifeCurrentAmount > 0 && policy.lifeProposedAmount !== policy.lifeCurrentAmount) {
+  // 新增險種（從 0 開始）→ ✅ 新增格式
+  if (newCategorySet.includes('癌症險'))
+    insights.push({ label: '✅ 新增 癌症險 保障補強', value: `癌症一次金 NT$${policy.cancerProposedLumpSum}萬 全新納入`, isNew: true })
+  if (newCategorySet.includes('長照險'))
+    insights.push({ label: '✅ 新增 長照險 保障補強', value: `每月 NT$${policy.ltcProposedMonthly.toLocaleString()} 失能扶助，最長至終身`, isNew: true })
+  if (newCategorySet.includes('意外險'))
+    insights.push({ label: '✅ 新增 意外實支實付 保障補強', value: `雜費上限 NT$${(policy.accidentProposedMisc / 10000).toFixed(0)}萬`, isNew: true })
+  if (newCategorySet.includes('醫療險'))
+    insights.push({ label: '✅ 新增 門診手術 保障補強', value: `NT$${(policy.medical.proposedRealOutpatient / 10000).toFixed(0)}萬 / 次`, isNew: true })
+  if (newCategorySet.includes('重大傷病險'))
+    insights.push({ label: '✅ 升級 重大傷病 保障補強', value: '舊型7項 → 重大傷病22萬+項（理賠定義大幅放寬）', isNew: true })
+
+  // 既有強化
+  if (policy.lifeCurrentAmount > 0 && policy.lifeProposedAmount > policy.lifeCurrentAmount) {
     const pct = Math.round(((policy.lifeProposedAmount - policy.lifeCurrentAmount) / policy.lifeCurrentAmount) * 100)
-    insights.push({ text: `身故保障`, bold: `${policy.lifeCurrentAmount} 萬 → ${policy.lifeProposedAmount} 萬（${pct > 0 ? '+' : ''}${pct}%）` })
+    insights.push({ label: '身故保障額度強化', value: `${policy.lifeCurrentAmount}萬 → ${policy.lifeProposedAmount}萬（+${pct}%）` })
   }
   if (policy.medical.proposedRealMisc > policy.medical.currentRealMisc) {
     const cur = policy.medical.currentRealMisc / 10000, prop = policy.medical.proposedRealMisc / 10000
-    insights.push({ text: `醫療雜費上限`, bold: `${cur} 萬 → ${prop} 萬（+${prop - cur} 萬）` })
+    insights.push({ label: '醫療雜費上限強化', value: `${cur}萬 → ${prop}萬（+${prop - cur}萬）` })
   }
   if (dailyProp > dailyCur) {
     const pct = dailyCur > 0 ? Math.round(((dailyProp - dailyCur) / dailyCur) * 100) : 0
-    insights.push({ text: `住院日額合計`, bold: `NT$${dailyCur.toLocaleString()} → NT$${dailyProp.toLocaleString()}（+${pct}%）` })
-  } else if (dailyCur === 0 && dailyProp > 0) {
-    insights.push({ text: `住院日額`, bold: `【新增】NT$${dailyProp.toLocaleString()} / 日` })
+    insights.push({ label: '住院日額合計強化', value: `NT$${dailyCur.toLocaleString()} → NT$${dailyProp.toLocaleString()}（+${pct}%）` })
   }
-  const cancerChange = calcChange(policy.cancerCurrentLumpSum, policy.cancerProposedLumpSum)
-  if (policy.cancerProposedLumpSum > 0)
-    insights.push({ text: `癌症一次金`, bold: `${policy.cancerCurrentLumpSum > 0 ? policy.cancerCurrentLumpSum + '萬 → ' : ''}${policy.cancerProposedLumpSum} 萬（${cancerChange}）` })
-
-  const maxPremium = Math.max(policy.totalProposedPremium, policy.totalCurrentPremium)
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto py-8 px-4"
-      style={{ backgroundColor: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl relative">
+      style={{ backgroundColor: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)' }}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl">
 
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-700 to-blue-600 rounded-t-2xl px-6 py-5 flex items-center justify-between">
@@ -455,7 +509,7 @@ function ReportModal({ policy, client, onClose }: { policy: PolicyData; client: 
               <div>
                 <p className="text-sm font-black text-red-700">⚠️ 舊型重大疾病僅保障 7 項，且定義嚴苛</p>
                 <p className="text-sm text-red-600 mt-1.5 leading-relaxed">
-                  現行重大疾病保單須達「末期狀態」才符合理賠定義，實際理賠率極低。
+                  現行保單須達「末期狀態」才符合理賠定義，實際理賠率極低。
                   建議立即升級為「重大傷病險」，理賠標準與健保卡一致，逾 22 萬項自動涵蓋。
                 </p>
               </div>
@@ -469,7 +523,7 @@ function ReportModal({ policy, client, onClose }: { policy: PolicyData; client: 
               <p className="text-sm leading-relaxed text-white">
                 本次規劃重點：僅以{' '}
                 <span className="font-black text-yellow-300 text-base">+{premiumPct}%</span>
-                {' '}的預算增幅，換取了關鍵保障項目平均{' '}
+                {' '}的預算增幅，換取關鍵保障項目平均{' '}
                 <span className="font-black text-yellow-300 text-base">+{avgBoostPct}%</span>
                 {' '}的保障增幅。槓桿效益顯著。
               </p>
@@ -482,7 +536,6 @@ function ReportModal({ policy, client, onClose }: { policy: PolicyData; client: 
               <BarChart3 size={15} className="text-white" />
               <p className="text-sm font-black text-white">保費大數據對比</p>
             </div>
-            {/* 三格數字 */}
             <div className="grid grid-cols-3 divide-x divide-slate-100">
               <div className="p-4 text-center">
                 <p className="text-xs text-slate-500 mb-1 font-semibold">現有年繳</p>
@@ -503,7 +556,7 @@ function ReportModal({ policy, client, onClose }: { policy: PolicyData; client: 
                 </p>
               </div>
             </div>
-            {/* 進度條（數字靠右固定寬度） */}
+            {/* 進度條 */}
             <div className="px-5 py-4 border-t border-slate-100 space-y-3">
               {[
                 { label: '現有方案', val: policy.totalCurrentPremium, cls: 'bg-slate-400' },
@@ -515,7 +568,6 @@ function ReportModal({ policy, client, onClose }: { policy: PolicyData; client: 
                     <div className={cn('h-full rounded-full transition-all duration-700', b.cls)}
                       style={{ width: `${maxPremium > 0 ? (b.val / maxPremium) * 100 : 0}%` }} />
                   </div>
-                  {/* 靠右固定寬度，確保對齊 */}
                   <span className="text-sm font-black text-black font-mono text-right shrink-0" style={{ width: 112 }}>
                     NT${b.val.toLocaleString()}
                   </span>
@@ -523,34 +575,6 @@ function ReportModal({ policy, client, onClose }: { policy: PolicyData; client: 
               ))}
             </div>
           </div>
-
-          {/* 新增 / 升級保障清單 */}
-          {upgrades.length > 0 && (
-            <div className="rounded-xl border border-emerald-200 overflow-hidden">
-              <div className="bg-emerald-600 px-5 py-3 flex items-center gap-2">
-                <Zap size={15} className="text-white" />
-                <p className="text-sm font-black text-white">新增 / 升級保障項目</p>
-              </div>
-              <div className="divide-y divide-slate-100">
-                {upgrades.map((u, i) => (
-                  <div key={i} className="flex items-center justify-between px-5 py-4 gap-4">
-                    <div className="min-w-0">
-                      <p className="text-sm font-black text-slate-900">{u.title}</p>
-                      <p className="text-xs text-slate-500 mt-0.5">{u.detail}</p>
-                    </div>
-                    {u.annualEst > 0 && (
-                      <div className="text-right shrink-0">
-                        <p className="text-[10px] text-emerald-600 font-bold">月均約</p>
-                        <p className="text-base font-black text-emerald-700 font-mono">
-                          +${Math.round(u.annualEst / 12).toLocaleString()}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* 預算分配對比條 */}
           {premiumDiff > 0 && (
@@ -560,56 +584,86 @@ function ReportModal({ policy, client, onClose }: { policy: PolicyData; client: 
                 <p className="text-sm font-black text-white">預算分配建議</p>
               </div>
               <div className="p-5 space-y-4">
-                {/* 堆疊對比條 */}
+
+                {/* 堆疊雙色條 */}
                 <div>
-                  <div className="flex rounded-full overflow-hidden h-6 w-full">
-                    <div className="bg-violet-500 flex items-center justify-center transition-all duration-700"
-                      style={{ width: `${upgradeRatio}%` }}>
-                      {upgradeRatio >= 15 && (
-                        <span className="text-[10px] font-black text-white whitespace-nowrap px-1">{upgradeRatio}%</span>
+                  <div className="flex rounded-xl overflow-hidden h-8 w-full border border-slate-200">
+                    {/* 新增險種：紫色 */}
+                    <div
+                      className="flex items-center justify-center bg-violet-600 transition-all duration-700"
+                      style={{ width: `${newPremiumRatio}%` }}
+                    >
+                      {newPremiumRatio >= 12 && (
+                        <span className="text-[11px] font-black text-white px-1 whitespace-nowrap">{newPremiumRatio}%</span>
                       )}
                     </div>
-                    <div className="bg-blue-300 flex items-center justify-center transition-all duration-700"
-                      style={{ width: `${enhanceRatio}%` }}>
-                      {enhanceRatio >= 15 && (
-                        <span className="text-[10px] font-black text-white whitespace-nowrap px-1">{enhanceRatio}%</span>
+                    {/* 既有強化：藍色 */}
+                    <div
+                      className="flex items-center justify-center bg-blue-400 transition-all duration-700"
+                      style={{ width: `${enhancePremiumRatio}%` }}
+                    >
+                      {enhancePremiumRatio >= 12 && (
+                        <span className="text-[11px] font-black text-white px-1 whitespace-nowrap">{enhancePremiumRatio}%</span>
                       )}
                     </div>
                   </div>
+                  {/* 圖例 */}
                   <div className="flex items-center gap-6 mt-2.5">
                     <div className="flex items-center gap-1.5">
-                      <span className="w-3 h-3 rounded-sm bg-violet-500 shrink-0" />
-                      <span className="text-xs font-bold text-slate-600">新增險種 ({upgradeRatio}%)</span>
+                      <span className="w-3.5 h-3.5 rounded-sm bg-violet-600 shrink-0" />
+                      <span className="text-xs font-bold text-slate-700">新增險種（{newPremiumRatio}%）</span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <span className="w-3 h-3 rounded-sm bg-blue-300 shrink-0" />
-                      <span className="text-xs font-bold text-slate-600">既有保障強化 ({enhanceRatio}%)</span>
+                      <span className="w-3.5 h-3.5 rounded-sm bg-blue-400 shrink-0" />
+                      <span className="text-xs font-bold text-slate-700">既有保障強化（{enhancePremiumRatio}%）</span>
                     </div>
                   </div>
                 </div>
-                {/* 明細列 */}
-                <div className="space-y-2 pt-1">
-                  {upgrades.map((u, i) => {
-                    const pct = premiumDiff > 0 ? Math.min(Math.round((u.annualEst / premiumDiff) * 100), 100) : 0
+
+                {/* 新增險種 Pill 清單 */}
+                {newCategorySet.length > 0 && (
+                  <div>
+                    <p className="text-xs font-black text-slate-500 uppercase tracking-wide mb-2">新增保障清單</p>
+                    <div className="flex flex-wrap gap-2">
+                      {newCategorySet.map((cat, i) => (
+                        <span key={i} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-violet-100 text-violet-800 text-xs font-black border border-violet-300">
+                          <PlusCircle size={11} />{cat}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 各類明細進度條 */}
+                <div className="space-y-2 pt-1 border-t border-slate-100">
+                  {newCategorySet.map((cat, i) => {
+                    const catItems = newItems.filter(n => n.category === cat)
                     return (
                       <div key={i} className="flex items-center gap-3">
-                        <span className="text-xs font-bold text-slate-600 shrink-0" style={{ width: 140 }}>{u.title}</span>
-                        <div className="flex-1 bg-slate-100 rounded-full h-3 overflow-hidden">
-                          <div className="h-full rounded-full bg-violet-400 transition-all duration-500"
-                            style={{ width: `${pct}%` }} />
+                        <div className="flex items-center gap-1 shrink-0" style={{ width: 140 }}>
+                          <PlusCircle size={10} className="text-violet-500 shrink-0" />
+                          <span className="text-xs font-bold text-slate-700 truncate">{cat}</span>
                         </div>
-                        <span className="text-xs font-black text-violet-700 text-right shrink-0" style={{ width: 36 }}>{pct}%</span>
+                        <div className="flex-1 bg-slate-100 rounded-full h-3 overflow-hidden">
+                          <div className="h-full rounded-full bg-violet-500 transition-all duration-500"
+                            style={{ width: `${Math.round(newPremiumRatio / Math.max(newCategorySet.length, 1))}%` }} />
+                        </div>
+                        <span className="text-[10px] text-violet-700 font-black shrink-0" style={{ width: 80 }}>
+                          {catItems.map(c => c.subLabel).join('・')}
+                        </span>
                       </div>
                     )
                   })}
-                  {enhanceRatio > 0 && (
+                  {enhancePremiumRatio > 0 && (
                     <div className="flex items-center gap-3">
                       <span className="text-xs font-bold text-slate-500 shrink-0" style={{ width: 140 }}>既有保障強化</span>
                       <div className="flex-1 bg-slate-100 rounded-full h-3 overflow-hidden">
-                        <div className="h-full rounded-full bg-blue-300 transition-all duration-500"
-                          style={{ width: `${enhanceRatio}%` }} />
+                        <div className="h-full rounded-full bg-blue-400 transition-all duration-500"
+                          style={{ width: `${enhancePremiumRatio}%` }} />
                       </div>
-                      <span className="text-xs font-black text-blue-600 text-right shrink-0" style={{ width: 36 }}>{enhanceRatio}%</span>
+                      <span className="text-xs font-black text-blue-600 shrink-0 text-right" style={{ width: 80 }}>
+                        {enhancePremiumRatio}%
+                      </span>
                     </div>
                   )}
                 </div>
@@ -617,7 +671,7 @@ function ReportModal({ policy, client, onClose }: { policy: PolicyData; client: 
             </div>
           )}
 
-          {/* 核心規劃價值（加大行距，數字加粗） */}
+          {/* 核心規劃價值 */}
           {insights.length > 0 && (
             <div className="rounded-xl border border-blue-200 bg-blue-50 p-5">
               <p className="text-sm font-black text-blue-800 flex items-center gap-2 mb-4">
@@ -626,9 +680,10 @@ function ReportModal({ policy, client, onClose }: { policy: PolicyData; client: 
               <ul className="space-y-4">
                 {insights.map((item, i) => (
                   <li key={i} className="flex items-start gap-3">
-                    <CheckCircle size={16} className="text-blue-500 shrink-0 mt-0.5" />
-                    <span className="text-sm text-blue-900 leading-relaxed">
-                      {item.text}：<span className="font-black text-blue-800">{item.bold}</span>
+                    <CheckCircle size={16} className={cn('shrink-0 mt-0.5', item.isNew ? 'text-violet-500' : 'text-blue-500')} />
+                    <span className="text-sm leading-relaxed" style={{ color: item.isNew ? '#5b21b6' : '#1e3a5f' }}>
+                      <span className="font-black">{item.label}</span>
+                      {item.value && <span className="font-medium">：{item.value}</span>}
                     </span>
                   </li>
                 ))}
@@ -799,19 +854,19 @@ export default function App() {
           <Row label="初次罹癌一次金" highlight
             currentNode={<NumInput value={p.cancerCurrentLumpSum} onChange={v => set('cancerCurrentLumpSum', v)} suffix="萬" />}
             proposedNode={<NumInput value={p.cancerProposedLumpSum} onChange={v => set('cancerProposedLumpSum', v)} suffix="萬" isProposed />}
-            statusNode={<SmartStatus cur={p.cancerCurrentLumpSum} prop={p.cancerProposedLumpSum} />} />
+            statusNode={<SmartStatus cur={p.cancerCurrentLumpSum} prop={p.cancerProposedLumpSum} dangerIfZero />} />
           <Row label="住院日額"
             currentNode={<NumInput value={p.cancerCurrentDaily} onChange={v => set('cancerCurrentDaily', v)} suffix="元/日" />}
             proposedNode={<NumInput value={p.cancerProposedDaily} onChange={v => set('cancerProposedDaily', v)} suffix="元/日" isProposed />}
-            statusNode={<SmartStatus cur={p.cancerCurrentDaily} prop={p.cancerProposedDaily} />} />
+            statusNode={<SmartStatus cur={p.cancerCurrentDaily} prop={p.cancerProposedDaily} dangerIfZero />} />
           <Row label="住院手術"
             currentNode={<NumInput value={p.cancerCurrentSurgery} onChange={v => set('cancerCurrentSurgery', v)} suffix="元/次" />}
             proposedNode={<NumInput value={p.cancerProposedSurgery} onChange={v => set('cancerProposedSurgery', v)} suffix="元/次" isProposed />}
-            statusNode={<SmartStatus cur={p.cancerCurrentSurgery} prop={p.cancerProposedSurgery} />} />
+            statusNode={<SmartStatus cur={p.cancerCurrentSurgery} prop={p.cancerProposedSurgery} dangerIfZero />} />
           <Row label="化療／放療補助" note="含標靶治療、免疫療法"
             currentNode={<NumInput value={p.cancerCurrentChemo} onChange={v => set('cancerCurrentChemo', v)} suffix="元/次" />}
             proposedNode={<NumInput value={p.cancerProposedChemo} onChange={v => set('cancerProposedChemo', v)} suffix="元/次" isProposed />}
-            statusNode={<SmartStatus cur={p.cancerCurrentChemo} prop={p.cancerProposedChemo} />} />
+            statusNode={<SmartStatus cur={p.cancerCurrentChemo} prop={p.cancerProposedChemo} dangerIfZero />} />
         </SectionCard>
 
         {/* 長照險 */}
