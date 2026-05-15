@@ -5,7 +5,7 @@ import {
   Shield, AlertTriangle, Heart, Activity, TrendingUp, Star,
   ChevronDown, ChevronUp, CheckCircle, AlertCircle, XCircle,
   Flame, User, Calendar, Briefcase, BadgeAlert, BarChart3,
-  FileText, X, Zap, PieChart, Minus, PlusCircle
+  FileText, X, Zap, Minus, PlusCircle, ArrowRight
 } from 'lucide-react'
 
 const cn = (...inputs: Parameters<typeof clsx>) => twMerge(clsx(inputs))
@@ -79,39 +79,26 @@ const initPolicy: PolicyData = {
 // ─── 核心分析邏輯 ─────────────────────────────────────────────────────────────
 
 interface NewItemFlag {
-  category: string   // 顯示名稱，例如「癌症險」
-  subLabel: string   // 子項目，例如「初次罹癌一次金」
+  category: string
+  subLabel: string
   proposed: number
 }
 
-/**
- * 掃描所有子項目，凡 currentVal === 0 且 proposedVal > 0 → 判定為【新增】
- * 回傳新增清單，以及新增保費 vs 強化保費的比例估算
- */
 function analyzePolicy(p: PolicyData): {
   newItems: NewItemFlag[]
-  newPremiumRatio: number   // 0–100，新增險種佔新增保費的比例
+  newPremiumRatio: number
   enhancePremiumRatio: number
 } {
   const newItems: NewItemFlag[] = []
 
-  // 壽險
   if (p.lifeCurrentAmount === 0 && p.lifeProposedAmount > 0)
     newItems.push({ category: '壽險', subLabel: '身故保障', proposed: p.lifeProposedAmount })
-
-  // 意外險
   if (p.accidentCurrentMisc === 0 && p.accidentProposedMisc > 0)
     newItems.push({ category: '意外險', subLabel: '意外實支實付', proposed: p.accidentProposedMisc })
-
-  // 醫療險
   if (p.medical.currentRealOutpatient === 0 && p.medical.proposedRealOutpatient > 0)
     newItems.push({ category: '醫療險', subLabel: '門診手術', proposed: p.medical.proposedRealOutpatient })
-
-  // 重大傷病（類型升級也視為新增）
   if (p.criticalType === 'critical_illness' && p.criticalProposedAmount > 0)
     newItems.push({ category: '重大傷病險', subLabel: '升級：7項→22萬項', proposed: p.criticalProposedAmount })
-
-  // 癌症險 — 精確掃描每個子項目
   if (p.cancerCurrentLumpSum === 0 && p.cancerProposedLumpSum > 0)
     newItems.push({ category: '癌症險', subLabel: '初次罹癌一次金', proposed: p.cancerProposedLumpSum })
   if (p.cancerCurrentDaily === 0 && p.cancerProposedDaily > 0)
@@ -120,60 +107,27 @@ function analyzePolicy(p: PolicyData): {
     newItems.push({ category: '癌症險', subLabel: '住院手術', proposed: p.cancerProposedSurgery })
   if (p.cancerCurrentChemo === 0 && p.cancerProposedChemo > 0)
     newItems.push({ category: '癌症險', subLabel: '化療/放療補助', proposed: p.cancerProposedChemo })
-
-  // 長照險
   if (p.ltcCurrentLumpSum === 0 && p.ltcProposedLumpSum > 0)
     newItems.push({ category: '長照險', subLabel: '一次給付金', proposed: p.ltcProposedLumpSum })
   if (p.ltcCurrentMonthly === 0 && p.ltcProposedMonthly > 0)
     newItems.push({ category: '長照險', subLabel: '每月給付額', proposed: p.ltcProposedMonthly })
 
-  // ── 保費比例估算 ────────────────────────────────────────────────────────
-  // 方法：找出哪些「大類」被判定有新增子項目，加總這些大類的保費差
   const premiumDiff = p.totalProposedPremium - p.totalCurrentPremium
   if (premiumDiff <= 0) return { newItems, newPremiumRatio: 0, enhancePremiumRatio: 100 }
 
   const newCategories = new Set(newItems.map(i => i.category))
-
-  // 各大類保費差（有新增子項目的大類 → 歸入「新增」）
-  const categoryPremiumDiff: Record<string, number> = {
-    '壽險':    Math.max(p.lifeProposedPremium - p.lifeCurrentPremium, 0),
-    '重大傷病險': Math.max(p.criticalProposedPremium - p.criticalCurrentPremium, 0),
-  }
-
-  // 癌症、長照：若有任何子項目為新增，整個險種保費差歸入新增
-  // 意外、醫療：只有新增子項目的保費比例歸入新增（估算）
   let newPremiumEst = 0
-
-  if (newCategories.has('癌症險')) {
-    // 整個癌症建議保費差歸入新增（因為整個險種都是從 0 開始）
-    const isCancerFullNew = p.cancerCurrentLumpSum === 0 && p.cancerCurrentDaily === 0
-      && p.cancerCurrentSurgery === 0 && p.cancerCurrentChemo === 0
-    if (isCancerFullNew) {
-      // 用總保費差的 30% 估算（無法精確拆分）
-      newPremiumEst += Math.round(premiumDiff * 0.28)
-    }
-  }
-  if (newCategories.has('長照險')) {
-    newPremiumEst += Math.round(premiumDiff * 0.22)
-  }
-  if (newCategories.has('意外險')) {
-    newPremiumEst += Math.round(premiumDiff * 0.10)
-  }
-  if (newCategories.has('醫療險') && newItems.some(i => i.category === '醫療險')) {
-    newPremiumEst += Math.round(premiumDiff * 0.08)
-  }
-  if (newCategories.has('重大傷病險')) {
-    newPremiumEst += Math.max(categoryPremiumDiff['重大傷病險'], 0)
-  }
+  if (newCategories.has('癌症險')) newPremiumEst += Math.round(premiumDiff * 0.28)
+  if (newCategories.has('長照險')) newPremiumEst += Math.round(premiumDiff * 0.22)
+  if (newCategories.has('意外險')) newPremiumEst += Math.round(premiumDiff * 0.10)
+  if (newCategories.has('醫療險')) newPremiumEst += Math.round(premiumDiff * 0.08)
+  if (newCategories.has('重大傷病險'))
+    newPremiumEst += Math.max(p.criticalProposedPremium - p.criticalCurrentPremium, 0)
 
   const newPremiumRatio     = Math.min(Math.round((newPremiumEst / premiumDiff) * 100), 100)
   const enhancePremiumRatio = 100 - newPremiumRatio
-
   return { newItems, newPremiumRatio, enhancePremiumRatio }
 }
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
 
 // ─── NumInput ─────────────────────────────────────────────────────────────────
 
@@ -193,8 +147,7 @@ function NumInput({ value, onChange, suffix, isProposed, allowZero }: {
         className={cn(
           'w-full rounded-lg px-3 py-2.5 text-right text-base font-bold',
           'bg-slate-100 border-2 border-transparent',
-          'focus:outline-none focus:border-blue-400 focus:bg-white',
-          'transition-all duration-150',
+          'focus:outline-none focus:border-blue-400 focus:bg-white transition-all duration-150',
           isEmpty ? 'placeholder:text-red-400 placeholder:font-medium' : '',
         )}
       />
@@ -362,16 +315,13 @@ function SectionCard({
 function ClientCard({ client, onChange }: { client: ClientInfo; onChange: (c: ClientInfo) => void }) {
   const set = (k: keyof ClientInfo) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     onChange({ ...client, [k]: e.target.value })
-
   const fieldCls = [
     'w-full block box-border',
     'bg-slate-100 border-2 border-transparent rounded-xl',
     'px-4 py-3 text-sm font-bold text-black',
     'focus:outline-none focus:border-blue-400 focus:bg-white transition-all',
   ].join(' ')
-
   const labelCls = 'block text-xs font-black text-slate-600 mb-1.5'
-
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 overflow-hidden">
       <div className="flex items-center gap-3 mb-5">
@@ -426,13 +376,19 @@ function ReportModal({ policy, client, onClose }: {
   const dailyCur  = policy.medical.currentRealDaily  + policy.medical.currentFixedDaily
   const dailyProp = policy.medical.proposedRealDaily + policy.medical.proposedFixedDaily
 
-  // ── 精確分析 ──────────────────────────────────────────────────────────────
   const { newItems, newPremiumRatio, enhancePremiumRatio } = analyzePolicy(policy)
-
-  // 去重：同一大類只顯示一次 pill
   const newCategorySet = Array.from(new Set(newItems.map(i => i.category)))
 
-  // ── 平均保障增幅（高槓桿句） ──────────────────────────────────────────────
+  // 既有強化項目
+  const enhanceItems: string[] = []
+  if (policy.medical.proposedRealMisc > policy.medical.currentRealMisc) enhanceItems.push('醫療雜費上限')
+  if (dailyProp > dailyCur) enhanceItems.push('住院日額合計')
+  if (policy.lifeCurrentAmount > 0 && policy.lifeProposedAmount > policy.lifeCurrentAmount) enhanceItems.push('壽險身故保障')
+  if (policy.accidentCurrentDeath > 0 && policy.accidentProposedDeath > policy.accidentCurrentDeath) enhanceItems.push('意外身故保障')
+  if (policy.cancerCurrentLumpSum > 0 && policy.cancerProposedLumpSum > policy.cancerCurrentLumpSum) enhanceItems.push('癌症一次金')
+  if (policy.criticalCurrentAmount > 0 && policy.criticalProposedAmount > policy.criticalCurrentAmount) enhanceItems.push('重大傷病額度')
+
+  // 平均保障增幅
   const pctSamples: number[] = []
   if (policy.lifeCurrentAmount > 0 && policy.lifeProposedAmount > policy.lifeCurrentAmount)
     pctSamples.push(Math.round(((policy.lifeProposedAmount - policy.lifeCurrentAmount) / policy.lifeCurrentAmount) * 100))
@@ -440,37 +396,41 @@ function ReportModal({ policy, client, onClose }: {
     pctSamples.push(Math.round(((dailyProp - dailyCur) / dailyCur) * 100))
   if (policy.medical.currentRealMisc > 0 && policy.medical.proposedRealMisc > policy.medical.currentRealMisc)
     pctSamples.push(Math.round(((policy.medical.proposedRealMisc - policy.medical.currentRealMisc) / policy.medical.currentRealMisc) * 100))
-  if (policy.cancerCurrentLumpSum > 0 && policy.cancerProposedLumpSum > policy.cancerCurrentLumpSum)
-    pctSamples.push(Math.round(((policy.cancerProposedLumpSum - policy.cancerCurrentLumpSum) / policy.cancerCurrentLumpSum) * 100))
   const avgBoostPct = pctSamples.length > 0 ? Math.round(pctSamples.reduce((a, b) => a + b, 0) / pctSamples.length) : 0
 
-  // ── 核心論點 ──────────────────────────────────────────────────────────────
+  // 核心論點
   const insights: { label: string; value: string; isNew?: boolean }[] = []
-
-  // 新增險種（從 0 開始）→ ✅ 新增格式
   if (newCategorySet.includes('癌症險'))
-    insights.push({ label: '✅ 新增 癌症險 保障補強', value: `癌症一次金 NT$${policy.cancerProposedLumpSum}萬 全新納入`, isNew: true })
+    insights.push({ label: '✅ 全新補強 癌症險', value: `癌症一次金 NT$${policy.cancerProposedLumpSum}萬 全新納入`, isNew: true })
   if (newCategorySet.includes('長照險'))
-    insights.push({ label: '✅ 新增 長照險 保障補強', value: `每月 NT$${policy.ltcProposedMonthly.toLocaleString()} 失能扶助，最長至終身`, isNew: true })
+    insights.push({ label: '✅ 全新補強 長照險', value: `每月 NT$${policy.ltcProposedMonthly.toLocaleString()} 失能扶助，最長至終身`, isNew: true })
   if (newCategorySet.includes('意外險'))
-    insights.push({ label: '✅ 新增 意外實支實付 保障補強', value: `雜費上限 NT$${(policy.accidentProposedMisc / 10000).toFixed(0)}萬`, isNew: true })
+    insights.push({ label: '✅ 全新補強 意外實支實付', value: `雜費上限 NT$${(policy.accidentProposedMisc / 10000).toFixed(0)}萬`, isNew: true })
   if (newCategorySet.includes('醫療險'))
-    insights.push({ label: '✅ 新增 門診手術 保障補強', value: `NT$${(policy.medical.proposedRealOutpatient / 10000).toFixed(0)}萬 / 次`, isNew: true })
+    insights.push({ label: '✅ 全新補強 門診手術', value: `NT$${(policy.medical.proposedRealOutpatient / 10000).toFixed(0)}萬 / 次`, isNew: true })
   if (newCategorySet.includes('重大傷病險'))
-    insights.push({ label: '✅ 升級 重大傷病 保障補強', value: '舊型7項 → 重大傷病22萬+項（理賠定義大幅放寬）', isNew: true })
-
-  // 既有強化
+    insights.push({ label: '✅ 升級 重大傷病', value: '舊型7項 → 22萬+項（理賠定義大幅放寬）', isNew: true })
   if (policy.lifeCurrentAmount > 0 && policy.lifeProposedAmount > policy.lifeCurrentAmount) {
     const pct = Math.round(((policy.lifeProposedAmount - policy.lifeCurrentAmount) / policy.lifeCurrentAmount) * 100)
-    insights.push({ label: '身故保障額度強化', value: `${policy.lifeCurrentAmount}萬 → ${policy.lifeProposedAmount}萬（+${pct}%）` })
+    insights.push({ label: '身故保障額度升級', value: `${policy.lifeCurrentAmount}萬 → ${policy.lifeProposedAmount}萬（+${pct}%）` })
   }
   if (policy.medical.proposedRealMisc > policy.medical.currentRealMisc) {
     const cur = policy.medical.currentRealMisc / 10000, prop = policy.medical.proposedRealMisc / 10000
-    insights.push({ label: '醫療雜費上限強化', value: `${cur}萬 → ${prop}萬（+${prop - cur}萬）` })
+    insights.push({ label: '醫療雜費上限升級', value: `${cur}萬 → ${prop}萬（+${prop - cur}萬）` })
   }
   if (dailyProp > dailyCur) {
     const pct = dailyCur > 0 ? Math.round(((dailyProp - dailyCur) / dailyCur) * 100) : 0
-    insights.push({ label: '住院日額合計強化', value: `NT$${dailyCur.toLocaleString()} → NT$${dailyProp.toLocaleString()}（+${pct}%）` })
+    insights.push({ label: '住院日額合計升級', value: `NT$${dailyCur.toLocaleString()} → NT$${dailyProp.toLocaleString()}（+${pct}%）` })
+  }
+
+  // 圖示對應
+  const categoryIcon: Record<string, React.ReactNode> = {
+    '壽險':     <Shield size={14} />,
+    '意外險':   <AlertTriangle size={14} />,
+    '醫療險':   <Activity size={14} />,
+    '重大傷病險': <Heart size={14} />,
+    '癌症險':   <TrendingUp size={14} />,
+    '長照險':   <Star size={14} />,
   }
 
   return (
@@ -510,7 +470,7 @@ function ReportModal({ policy, client, onClose }: {
 
           {/* 高槓桿一句話 */}
           {premiumPct > 0 && avgBoostPct > 0 && (
-            <div className="flex items-start gap-3 p-4 rounded-xl bg-blue-700 border border-blue-600">
+            <div className="flex items-start gap-3 p-4 rounded-xl bg-blue-700">
               <Zap size={16} className="text-yellow-300 shrink-0 mt-0.5" />
               <p className="text-sm leading-relaxed text-white">
                 本次規劃重點：僅以{' '}
@@ -548,7 +508,6 @@ function ReportModal({ policy, client, onClose }: {
                 </p>
               </div>
             </div>
-            {/* 進度條 */}
             <div className="px-5 py-4 border-t border-slate-100 space-y-3">
               {[
                 { label: '現有方案', val: policy.totalCurrentPremium, cls: 'bg-slate-400' },
@@ -568,97 +527,104 @@ function ReportModal({ policy, client, onClose }: {
             </div>
           </div>
 
-          {/* 預算分配對比條 */}
+          {/* ── 保費增幅價值分析（重新設計） ──────────────────────────────── */}
           {premiumDiff > 0 && (
             <div className="rounded-xl border border-violet-200 overflow-hidden">
-              <div className="bg-violet-600 px-5 py-3 flex items-center gap-2">
-                <PieChart size={15} className="text-white" />
-                <p className="text-sm font-black text-white">預算分配建議</p>
+              {/* 標題 */}
+              <div className="bg-violet-600 px-5 py-4">
+                <p className="text-sm font-black text-white">保費增幅價值分析</p>
+                <p className="text-xs text-violet-200 mt-1 leading-relaxed">
+                  分析本次調整後的保費預算，如何有效分配於全新缺口補強與原保障額度升級。
+                </p>
               </div>
-              <div className="p-5 space-y-4">
 
-                {/* 堆疊雙色條 */}
-                <div>
-                  <div className="flex rounded-xl overflow-hidden h-8 w-full border border-slate-200">
-                    {/* 新增險種：紫色 */}
-                    <div
-                      className="flex items-center justify-center bg-violet-600 transition-all duration-700"
-                      style={{ width: `${newPremiumRatio}%` }}
-                    >
-                      {newPremiumRatio >= 12 && (
-                        <span className="text-[11px] font-black text-white px-1 whitespace-nowrap">{newPremiumRatio}%</span>
+              <div className="p-5 space-y-5">
+
+                {/* 比例對照條 */}
+                <div className="space-y-2">
+                  <div className="flex rounded-xl overflow-hidden h-10 w-full border border-slate-200 shadow-sm">
+                    <div className="flex items-center justify-center bg-violet-600 transition-all duration-700 gap-1.5"
+                      style={{ width: `${newPremiumRatio}%` }}>
+                      {newPremiumRatio >= 15 && (
+                        <>
+                          <PlusCircle size={12} className="text-white shrink-0" />
+                          <span className="text-xs font-black text-white whitespace-nowrap">全新補強 {newPremiumRatio}%</span>
+                        </>
                       )}
                     </div>
-                    {/* 既有強化：藍色 */}
-                    <div
-                      className="flex items-center justify-center bg-blue-400 transition-all duration-700"
-                      style={{ width: `${enhancePremiumRatio}%` }}
-                    >
-                      {enhancePremiumRatio >= 12 && (
-                        <span className="text-[11px] font-black text-white px-1 whitespace-nowrap">{enhancePremiumRatio}%</span>
+                    <div className="flex items-center justify-center bg-blue-400 transition-all duration-700 gap-1.5"
+                      style={{ width: `${enhancePremiumRatio}%` }}>
+                      {enhancePremiumRatio >= 15 && (
+                        <>
+                          <TrendingUp size={12} className="text-white shrink-0" />
+                          <span className="text-xs font-black text-white whitespace-nowrap">額度升級 {enhancePremiumRatio}%</span>
+                        </>
                       )}
                     </div>
                   </div>
-                  {/* 圖例 */}
-                  <div className="flex items-center gap-6 mt-2.5">
+                  <div className="flex items-center gap-5">
                     <div className="flex items-center gap-1.5">
-                      <span className="w-3.5 h-3.5 rounded-sm bg-violet-600 shrink-0" />
-                      <span className="text-xs font-bold text-slate-700">新增險種（{newPremiumRatio}%）</span>
+                      <span className="w-3 h-3 rounded-sm bg-violet-600 shrink-0" />
+                      <span className="text-xs font-bold text-slate-600">全新缺口補強（{newPremiumRatio}%）</span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <span className="w-3.5 h-3.5 rounded-sm bg-blue-400 shrink-0" />
-                      <span className="text-xs font-bold text-slate-700">既有保障強化（{enhancePremiumRatio}%）</span>
+                      <span className="w-3 h-3 rounded-sm bg-blue-400 shrink-0" />
+                      <span className="text-xs font-bold text-slate-600">原保障額度升級（{enhancePremiumRatio}%）</span>
                     </div>
                   </div>
                 </div>
 
-                {/* 新增險種 Pill 清單 */}
-                {newCategorySet.length > 0 && (
-                  <div>
-                    <p className="text-xs font-black text-slate-500 uppercase tracking-wide mb-2">新增保障清單</p>
-                    <div className="flex flex-wrap gap-2">
-                      {newCategorySet.map((cat, i) => (
-                        <span key={i} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-violet-100 text-violet-800 text-xs font-black border border-violet-300">
-                          <PlusCircle size={11} />{cat}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                {/* 三欄：左（新增）｜中（月費箭頭）｜右（強化） */}
+                <div className="grid grid-cols-[1fr_auto_1fr] gap-3 items-start">
 
-                {/* 各類明細進度條 */}
-                <div className="space-y-2 pt-1 border-t border-slate-100">
-                  {newCategorySet.map((cat, i) => {
-                    const catItems = newItems.filter(n => n.category === cat)
-                    return (
-                      <div key={i} className="flex items-center gap-3">
-                        <div className="flex items-center gap-1 shrink-0" style={{ width: 140 }}>
-                          <PlusCircle size={10} className="text-violet-500 shrink-0" />
-                          <span className="text-xs font-bold text-slate-700 truncate">{cat}</span>
-                        </div>
-                        <div className="flex-1 bg-slate-100 rounded-full h-3 overflow-hidden">
-                          <div className="h-full rounded-full bg-violet-500 transition-all duration-500"
-                            style={{ width: `${Math.round(newPremiumRatio / Math.max(newCategorySet.length, 1))}%` }} />
-                        </div>
-                        <span className="text-[10px] text-violet-700 font-black shrink-0" style={{ width: 80 }}>
-                          {catItems.map(c => c.subLabel).join('・')}
-                        </span>
+                  {/* 左：全新缺口補強 */}
+                  <div className="space-y-2">
+                    <p className="text-[11px] font-black text-violet-600 uppercase tracking-wide flex items-center gap-1">
+                      <PlusCircle size={11} />全新缺口補強
+                    </p>
+                    {newCategorySet.length > 0 ? newCategorySet.map((cat, i) => (
+                      <div key={i} className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-violet-50 border border-violet-200">
+                        <span className="text-violet-600 shrink-0">{categoryIcon[cat] ?? <Shield size={14} />}</span>
+                        <span className="text-sm font-black text-violet-800 leading-tight">{cat}</span>
                       </div>
-                    )
-                  })}
-                  {enhancePremiumRatio > 0 && (
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs font-bold text-slate-500 shrink-0" style={{ width: 140 }}>既有保障強化</span>
-                      <div className="flex-1 bg-slate-100 rounded-full h-3 overflow-hidden">
-                        <div className="h-full rounded-full bg-blue-400 transition-all duration-500"
-                          style={{ width: `${enhancePremiumRatio}%` }} />
+                    )) : (
+                      <div className="px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200">
+                        <span className="text-xs text-slate-400 font-medium">無新增項目</span>
                       </div>
-                      <span className="text-xs font-black text-blue-600 shrink-0 text-right" style={{ width: 80 }}>
-                        {enhancePremiumRatio}%
-                      </span>
+                    )}
+                  </div>
+
+                  {/* 中：月費連接 */}
+                  <div className="flex flex-col items-center justify-center pt-6 gap-1 px-1">
+                    <div className="text-[10px] font-black text-slate-400 text-center leading-tight whitespace-nowrap">每月僅增加</div>
+                    <div className={cn(
+                      'text-base font-black font-mono text-center whitespace-nowrap',
+                      monthlyDiff >= 0 ? 'text-orange-600' : 'text-emerald-600'
+                    )}>
+                      {monthlyDiff >= 0 ? '+' : ''}${monthlyDiff.toLocaleString()}
                     </div>
-                  )}
+                    <div className="text-[10px] font-semibold text-slate-400">元 / 月</div>
+                    <ArrowRight size={18} className="text-slate-300 mt-1" />
+                  </div>
+
+                  {/* 右：原保障額度升級 */}
+                  <div className="space-y-2">
+                    <p className="text-[11px] font-black text-blue-600 uppercase tracking-wide flex items-center gap-1">
+                      <TrendingUp size={11} />原保障額度升級
+                    </p>
+                    {enhanceItems.length > 0 ? enhanceItems.map((item, i) => (
+                      <div key={i} className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-blue-50 border border-blue-200">
+                        <CheckCircle size={13} className="text-blue-500 shrink-0" />
+                        <span className="text-sm font-bold text-blue-800 leading-tight">{item}</span>
+                      </div>
+                    )) : (
+                      <div className="px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200">
+                        <span className="text-xs text-slate-400 font-medium">無強化項目</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
+
               </div>
             </div>
           )}
